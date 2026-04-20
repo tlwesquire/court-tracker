@@ -833,6 +833,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
       <thead><tr>
         <th style="text-align:left;min-width:160px">COUNTY</th>
         <th style="text-align:left">COUNTY SEAT</th>
+        <th>TZ</th>
         <th>MI OW/RT</th>
         <th style="color:var(--blue)">DRIVE OW</th>
         <th>MI COST RT</th>
@@ -886,6 +887,27 @@ const DIST = {
   'ST. CLAIR COUNTY - PELL CITY':29,'TALLADEGA COUNTY - SYLACAUGA':71,
   'TALLAPOOSA COUNTY -  ALEXANDER CITY':78,'TUSCALOOSA COUNTY - TUSCALOOSA':87,
   'WINSTON COUNTY - DOUBLE SPRINGS':57,
+  'AUTAUGA COUNTY - PRATTVILLE':138,'BALDWIN COUNTY - BAY MINETTE':288,
+  'BULLOCK COUNTY - UNION SPRINGS':167,'BUTLER COUNTY - GREENVILLE':162,
+  'CHILTON COUNTY - CLANTON':74,'CHOCTAW COUNTY - BUTLER':198,
+  'CLARKE COUNTY - GROVE HILL':206,'CLAY COUNTY - ASHLAND':65,
+  'COFFEE COUNTY - ELBA':182,'CONECUH COUNTY - EVERGREEN':208,
+  'COOSA COUNTY - ROCKFORD':101,'COVINGTON COUNTY - ANDALUSIA':210,
+  'CRENSHAW COUNTY - LUVERNE':180,'DALE COUNTY - OZARK':208,
+  'DALLAS COUNTY - SELMA':141,'ELMORE COUNTY - WETUMPKA':128,
+  'ESCAMBIA COUNTY - BREWTON':249,'FAYETTE COUNTY - FAYETTE':109,
+  'GENEVA COUNTY - GENEVA':238,'GREENE COUNTY - EUTAW':138,
+  'HENRY COUNTY - ABBEVILLE':199,'HOUSTON COUNTY - DOTHAN':228,
+  'LAMAR COUNTY - VERNON':140,'LAUDERDALE COUNTY - FLORENCE':156,
+  'LAWRENCE COUNTY - MOULTON':73,'LEE COUNTY - OPELIKA':141,
+  'LOWNDES COUNTY - HAYNEVILLE':141,'MACON COUNTY - TUSKEGEE':157,
+  'MADISON COUNTY - HUNTSVILLE':82,'MARENGO COUNTY - LINDEN':152,
+  'MARION COUNTY - HAMILTON':117,'MOBILE COUNTY - MOBILE':308,
+  'MONROE COUNTY - MONROEVILLE':218,'MONTGOMERY COUNTY - MONTGOMERY':136,
+  'PERRY COUNTY - MARION':127,'PICKENS COUNTY - CARROLLTON':144,
+  'PIKE COUNTY - TROY':183,'SUMTER COUNTY - LIVINGSTON':168,
+  'WALKER COUNTY - JASPER':69,'WASHINGTON COUNTY - CHATOM':264,
+  'WILCOX COUNTY - CAMDEN':169,
 };
 
 // One-way drive times (minutes) from 311A 1st Ave E, Oneonta AL 35121
@@ -904,6 +926,27 @@ const DRIVE_MIN = {
   'ST. CLAIR COUNTY - PELL CITY':32,'TALLADEGA COUNTY - SYLACAUGA':77,
   'TALLAPOOSA COUNTY -  ALEXANDER CITY':85,'TUSCALOOSA COUNTY - TUSCALOOSA':84,
   'WINSTON COUNTY - DOUBLE SPRINGS':71,
+  'AUTAUGA COUNTY - PRATTVILLE':127,'BALDWIN COUNTY - BAY MINETTE':252,
+  'BULLOCK COUNTY - UNION SPRINGS':157,'BUTLER COUNTY - GREENVILLE':148,
+  'CHILTON COUNTY - CLANTON':74,'CHOCTAW COUNTY - BUTLER':192,
+  'CLARKE COUNTY - GROVE HILL':193,'CLAY COUNTY - ASHLAND':71,
+  'COFFEE COUNTY - ELBA':170,'CONECUH COUNTY - EVERGREEN':192,
+  'COOSA COUNTY - ROCKFORD':97,'COVINGTON COUNTY - ANDALUSIA':195,
+  'CRENSHAW COUNTY - LUVERNE':165,'DALE COUNTY - OZARK':193,
+  'DALLAS COUNTY - SELMA':133,'ELMORE COUNTY - WETUMPKA':119,
+  'ESCAMBIA COUNTY - BREWTON':230,'FAYETTE COUNTY - FAYETTE':107,
+  'GENEVA COUNTY - GENEVA':222,'GREENE COUNTY - EUTAW':133,
+  'HENRY COUNTY - ABBEVILLE':187,'HOUSTON COUNTY - DOTHAN':213,
+  'LAMAR COUNTY - VERNON':137,'LAUDERDALE COUNTY - FLORENCE':142,
+  'LAWRENCE COUNTY - MOULTON':75,'LEE COUNTY - OPELIKA':131,
+  'LOWNDES COUNTY - HAYNEVILLE':133,'MACON COUNTY - TUSKEGEE':147,
+  'MADISON COUNTY - HUNTSVILLE':78,'MARENGO COUNTY - LINDEN':145,
+  'MARION COUNTY - HAMILTON':117,'MOBILE COUNTY - MOBILE':278,
+  'MONROE COUNTY - MONROEVILLE':201,'MONTGOMERY COUNTY - MONTGOMERY':127,
+  'PERRY COUNTY - MARION':121,'PICKENS COUNTY - CARROLLTON':142,
+  'PIKE COUNTY - TROY':170,'SUMTER COUNTY - LIVINGSTON':161,
+  'WALKER COUNTY - JASPER':71,'WASHINGTON COUNTY - CHATOM':247,
+  'WILCOX COUNTY - CAMDEN':160,
 };
 const COURT_TIME_MIN = {
   'Hearing':30,'Trial':45,'Bench Trial':45,'In-Person':30,
@@ -2803,6 +2846,9 @@ function fhUpdate() {
 
   var row = AL_COUNTIES.find(function(r){ return r[4]===loc||r[0]===loc; });
   var shortName = row ? row[0]+' County – '+row[1] : loc;
+  var tzNote = row && row[5]==='EST'
+    ? ' <span style="color:#e8a838;font-size:11px">⚠ This courthouse is on EASTERN TIME — hearing time listed in EST, not CST</span>'
+    : '';
 
   if (result) result.style.display = '';
 
@@ -2824,7 +2870,7 @@ function fhUpdate() {
   // Detail breakdown
   var newTag = isNew ? '<span style="color:var(--green);font-weight:600"> ★ NEW COUNTY</span>' : '';
   $('fh-detail').innerHTML = [
-    '📍 <strong style="color:var(--text)">'+shortName+'</strong>'+newTag,
+    '📍 <strong style="color:var(--text)">'+shortName+'</strong>'+newTag+tzNote,
     '🏠 <strong>Leave Remlap</strong> at <strong style="color:var(--green)">'+tcTimeFmt(departMins)+'</strong>'
       +' — '+formatTime(driveHome)+' drive, arrive '+'<strong style="color:var(--accent)">'+tcTimeFmt(arriveMins)+'</strong>'+' (30 min before hearing)',
     '⚖ <strong>'+type+'</strong> starts <strong>'+tcTimeFmt(hearingMins)+'</strong>, est. '+formatTime(courtMin)+' in court, finish ~<strong>'+tcTimeFmt(endMins)+'</strong>',
@@ -2984,18 +3030,19 @@ function tcMakeCountyOpts(selected) {
   // Build merged list from AL_COUNTIES (has all 67) plus any DIST entries not in AL_COUNTIES
   var allRows = [];
   AL_COUNTIES.forEach(function(r) {
-    var locKey = r[4] || r[0]; // use app key if exists, else county name
-    var mi = r[2];
+    var locKey = r[4] || r[0];
+    var mi  = r[2];
+    var tz  = r[5] || 'CST';
     var isNew = tcIsNewCounty(locKey);
-    var hasAppKey = !!r[4];
-    allRows.push({ key: locKey, label: r[0] + ' – ' + r[1], mi: mi, isNew: isNew, hasAppKey: hasAppKey });
+    allRows.push({ key: locKey, label: r[0] + ' – ' + r[1], mi: mi, isNew: isNew, tz: tz });
   });
 
   // Sort by distance
   allRows.sort(function(a,b){ return a.mi - b.mi; });
 
   allRows.forEach(function(row) {
-    var label = row.label + ' (' + row.mi + ' mi)';
+    var tzTag = row.tz === 'EST' ? ' [EST ⚠]' : '';
+    var label = row.label + ' (' + row.mi + ' mi)' + tzTag;
     if (row.isNew) label = '★ NEW — ' + label;
     var sel = selected === row.key ? ' selected' : '';
     opts += '<option value="' + row.key + '"' + sel + '>' + label + '</option>';
@@ -3059,6 +3106,11 @@ function tcRender() {
   // ── Build input rows ───────────────────────────────────────────────────────
   $('tc-stops').innerHTML = tcStops.map(function(s, idx) {
     var isNew = s.loc ? tcIsNewCounty(s.loc) : false;
+    var ctyRow = s.loc ? AL_COUNTIES.find(function(r){ return r[4]===s.loc||r[0]===s.loc; }) : null;
+    var tz     = ctyRow ? (ctyRow[5]||'CST') : 'CST';
+    var tzBadge = tz === 'EST'
+      ? '<span style="font-size:10px;color:#e8a838;background:rgba(232,168,56,.12);padding:1px 6px;border-radius:4px;border:1px solid #e8a838;flex-shrink:0">⚠ EST</span>'
+      : '<span style="font-size:10px;color:var(--muted);padding:1px 6px;border-radius:4px;border:1px solid var(--bd);flex-shrink:0">CST</span>';
     var newBadge = isNew
       ? '<span style="font-size:10px;color:var(--green);background:rgba(63,185,80,.12);padding:1px 6px;border-radius:4px;border:1px solid var(--green);flex-shrink:0">★ NEW COUNTY</span>'
       : '';
@@ -3069,6 +3121,7 @@ function tcRender() {
       + '<div style="display:flex;gap:6px;align-items:center;min-width:0">'
         + '<select class="fs" style="font-size:12px;flex:1" onchange="tcUpdateStop('+s.id+',\'loc\',this.value)">'
           + tcMakeCountyOpts(s.loc) + '</select>'
+        + (s.loc ? tzBadge : '')
         + newBadge
       + '</div>'
       + '<select class="fs" style="font-size:12px" onchange="tcUpdateStop('+s.id+',\'type\',this.value)">'
@@ -3150,7 +3203,10 @@ function tcRender() {
     var s = sd.s;
     var shortLoc = (function(){
       var row = AL_COUNTIES.find(function(r){ return r[4]===s.loc||r[0]===s.loc; });
-      if (row) return row[0] + ' – ' + row[1];
+      if (row) {
+        var tzNote = row[5]==='EST' ? ' <span style="color:#e8a838;font-size:9px">⚠ EST</span>' : '';
+        return row[0] + ' – ' + row[1] + tzNote;
+      }
       return s.loc.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
     })();
 
@@ -3307,74 +3363,75 @@ function tcSaveToAdd() {
 // ALL ALABAMA COUNTIES REFERENCE
 // ═══════════════════════════════════════════════════════════════════════════════
 var AL_COUNTIES = [
-  // [County, County Seat, Miles OW, Drive Min OW, App Location Key (null if not in DIST)]
-  ['AUTAUGA',    'Prattville',      138, 127, null],
-  ['BALDWIN',    'Bay Minette',     288, 252, null],
-  ['BARBOUR',    'Eufaula',         191, 185, 'BARBOUR COUNTY - EUFAULA'],
-  ['BIBB',       'Centreville',      63,  73, 'BIBB COUNTY - CENTERVILLE'],
-  ['BLOUNT',     'Oneonta',          10,  17, 'BLOUNT COUNTY - ONEONTA'],
-  ['BULLOCK',    'Union Springs',   167, 157, null],
-  ['BUTLER',     'Greenville',      162, 148, null],
-  ['CALHOUN',    'Anniston',         50,  52, 'CALHOUN COUNTY - ANNISTON'],
-  ['CHAMBERS',   'LaFayette',       101, 120, 'CHAMBERS COUNTY - LAYFATTE'],
-  ['CHEROKEE',   'Centre',           57,  66, 'CHEROKEE COUNTY - CENTRE'],
-  ['CHILTON',    'Clanton',          74,  74, null],
-  ['CHOCTAW',    'Butler',          198, 192, null],
-  ['CLARKE',     'Grove Hill',      206, 193, null],
-  ['CLAY',       'Ashland',          65,  71, null],
-  ['CLEBURNE',   'Heflin',           62,  68, 'CLEBURNE COUNTY - HEFLIN'],
-  ['COFFEE',     'Elba',            182, 170, null],
-  ['COLBERT',    'Tuscumbia',       142, 131, 'COLBERT COUNTY - TUSCUMBIA'],
-  ['CONECUH',    'Evergreen',       208, 192, null],
-  ['COOSA',      'Rockford',        101,  97, null],
-  ['COVINGTON',  'Andalusia',       210, 195, null],
-  ['CRENSHAW',   'Luverne',         180, 165, null],
-  ['CULLMAN',    'Cullman',          44,  44, 'CULLMAN COUNTY - CULLMAN'],
-  ['DALE',       'Ozark',           208, 193, null],
-  ['DALLAS',     'Selma',           141, 133, null],
-  ['DEKALB',     'Fort Payne',       82,  89, 'DEKLAB COUNTY - FT PAYNE'],
-  ['ELMORE',     'Wetumpka',        128, 119, null],
-  ['ESCAMBIA',   'Brewton',         249, 230, null],
-  ['ETOWAH',     'Gadsden',          36,  39, 'ETOWAH COUNTY - GADSDEN'],
-  ['FAYETTE',    'Fayette',         109, 107, null],
-  ['FRANKLIN',   'Russellville',    122, 118, 'FRANKLIN COUNTY - RUSSELLVILLE'],
-  ['GENEVA',     'Geneva',          238, 222, null],
-  ['GREENE',     'Eutaw',           138, 133, null],
-  ['HALE',       'Greensboro',      113, 123, 'HALE COUNTY - GREENSBORO'],
-  ['HENRY',      'Abbeville',       199, 187, null],
-  ['HOUSTON',    'Dothan',          228, 213, null],
-  ['JACKSON',    'Scottsboro',       96,  99, 'JACKSON COUNTY - SCOTTSBORO'],
-  ['JEFFERSON',  'Birmingham',       52,  50, 'JEFFERSON COUNTY - BIRMINGHAM'],
-  ['LAMAR',      'Vernon',          140, 137, null],
-  ['LAUDERDALE', 'Florence',        156, 142, null],
-  ['LAWRENCE',   'Moulton',          73,  75, null],
-  ['LEE',        'Opelika',         141, 131, null],
-  ['LIMESTONE',  'Athens',           94,  87, 'LIMESTONE COUNTY - ATHENS'],
-  ['LOWNDES',    'Hayneville',      141, 133, null],
-  ['MACON',      'Tuskegee',        157, 147, null],
-  ['MADISON',    'Huntsville',       82,  78, null],
-  ['MARENGO',    'Linden',          152, 145, null],
-  ['MARION',     'Hamilton',        117, 117, null],
-  ['MARSHALL',   'Guntersville',     39,  47, 'MARSHALL COUNTY - GUNTERSVILLE'],
-  ['MOBILE',     'Mobile',          308, 278, null],
-  ['MONROE',     'Monroeville',     218, 201, null],
-  ['MONTGOMERY', 'Montgomery',      136, 127, null],
-  ['MORGAN',     'Decatur',          69,  69, 'MORGAN COUNTY - DECATUR'],
-  ['PERRY',      'Marion',          127, 121, null],
-  ['PICKENS',    'Carrollton',      144, 142, null],
-  ['PIKE',       'Troy',            183, 170, null],
-  ['RANDOLPH',   'Wedowee',          79,  91, 'RANDOLPH COUNTY - WEDOWEE'],
-  ['RUSSELL',    'Phenix City',     197, 182, 'RUSSELL COUNTY - PHENIX CITY'],
-  ['ST. CLAIR',  'Ashville / Pell City', 16, 19, 'ST. CLAIR COUNTY - ASHVILLE'],
-  ['SHELBY',     'Columbiana',       73,  73, 'SHELBY COUNTY - COLUMBIANA'],
-  ['SUMTER',     'Livingston',      168, 161, null],
-  ['TALLADEGA',  'Sylacauga',        71,  77, 'TALLADEGA COUNTY - SYLACAUGA'],
-  ['TALLAPOOSA', 'Alexander City',   78,  85, 'TALLAPOOSA COUNTY -  ALEXANDER CITY'],
-  ['TUSCALOOSA', 'Tuscaloosa',       87,  84, 'TUSCALOOSA COUNTY - TUSCALOOSA'],
-  ['WALKER',     'Jasper',           69,  71, null],
-  ['WASHINGTON', 'Chatom',          264, 247, null],
-  ['WILCOX',     'Camden',          169, 160, null],
-  ['WINSTON',    'Double Springs',   57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS'],,
+  // [County, County Seat, Miles OW, Drive Min OW, App Location Key, Timezone]
+  ['AUTAUGA',    'Prattville',         138, 127, 'AUTAUGA COUNTY - PRATTVILLE',       'CST'],
+  ['BALDWIN',    'Bay Minette',        288, 252, 'BALDWIN COUNTY - BAY MINETTE',      'CST'],
+  ['BARBOUR',    'Eufaula',            191, 185, 'BARBOUR COUNTY - EUFAULA',          'CST'],
+  ['BIBB',       'Centreville',         63,  73, 'BIBB COUNTY - CENTERVILLE',         'CST'],
+  ['BLOUNT',     'Oneonta',             10,  17, 'BLOUNT COUNTY - ONEONTA',           'CST'],
+  ['BULLOCK',    'Union Springs',      167, 157, 'BULLOCK COUNTY - UNION SPRINGS',    'CST'],
+  ['BUTLER',     'Greenville',         162, 148, 'BUTLER COUNTY - GREENVILLE',        'CST'],
+  ['CALHOUN',    'Anniston',            50,  52, 'CALHOUN COUNTY - ANNISTON',         'CST'],
+  ['CHAMBERS',   'LaFayette',          101, 120, 'CHAMBERS COUNTY - LAYFATTE',        'CST'],
+  ['CHEROKEE',   'Centre',              57,  66, 'CHEROKEE COUNTY - CENTRE',          'CST'],
+  ['CHILTON',    'Clanton',             74,  74, 'CHILTON COUNTY - CLANTON',          'CST'],
+  ['CHOCTAW',    'Butler',             198, 192, 'CHOCTAW COUNTY - BUTLER',           'CST'],
+  ['CLARKE',     'Grove Hill',         206, 193, 'CLARKE COUNTY - GROVE HILL',        'CST'],
+  ['CLAY',       'Ashland',             65,  71, 'CLAY COUNTY - ASHLAND',             'CST'],
+  ['CLEBURNE',   'Heflin',              62,  68, 'CLEBURNE COUNTY - HEFLIN',          'CST'],
+  ['COFFEE',     'Elba',               182, 170, 'COFFEE COUNTY - ELBA',              'CST'],
+  ['COLBERT',    'Tuscumbia',          142, 131, 'COLBERT COUNTY - TUSCUMBIA',        'CST'],
+  ['CONECUH',    'Evergreen',          208, 192, 'CONECUH COUNTY - EVERGREEN',        'CST'],
+  ['COOSA',      'Rockford',           101,  97, 'COOSA COUNTY - ROCKFORD',           'CST'],
+  ['COVINGTON',  'Andalusia',          210, 195, 'COVINGTON COUNTY - ANDALUSIA',      'CST'],
+  ['CRENSHAW',   'Luverne',            180, 165, 'CRENSHAW COUNTY - LUVERNE',         'CST'],
+  ['CULLMAN',    'Cullman',             44,  44, 'CULLMAN COUNTY - CULLMAN',          'CST'],
+  ['DALE',       'Ozark',              208, 193, 'DALE COUNTY - OZARK',               'CST'],
+  ['DALLAS',     'Selma',              141, 133, 'DALLAS COUNTY - SELMA',             'CST'],
+  ['DEKALB',     'Fort Payne',          82,  89, 'DEKLAB COUNTY - FT PAYNE',          'CST'],
+  ['ELMORE',     'Wetumpka',           128, 119, 'ELMORE COUNTY - WETUMPKA',          'CST'],
+  ['ESCAMBIA',   'Brewton',            249, 230, 'ESCAMBIA COUNTY - BREWTON',         'CST'],
+  ['ETOWAH',     'Gadsden',             36,  39, 'ETOWAH COUNTY - GADSDEN',           'CST'],
+  ['FAYETTE',    'Fayette',            109, 107, 'FAYETTE COUNTY - FAYETTE',          'CST'],
+  ['FRANKLIN',   'Russellville',       122, 118, 'FRANKLIN COUNTY - RUSSELLVILLE',    'CST'],
+  ['GENEVA',     'Geneva',             238, 222, 'GENEVA COUNTY - GENEVA',            'CST'],
+  ['GREENE',     'Eutaw',              138, 133, 'GREENE COUNTY - EUTAW',             'CST'],
+  ['HALE',       'Greensboro',         113, 123, 'HALE COUNTY - GREENSBORO',          'CST'],
+  ['HENRY',      'Abbeville',          199, 187, 'HENRY COUNTY - ABBEVILLE',          'CST'],
+  ['HOUSTON',    'Dothan',             228, 213, 'HOUSTON COUNTY - DOTHAN',           'CST'],
+  ['JACKSON',    'Scottsboro',          96,  99, 'JACKSON COUNTY - SCOTTSBORO',       'CST'],
+  ['JEFFERSON',  'Birmingham',          52,  50, 'JEFFERSON COUNTY - BIRMINGHAM',     'CST'],
+  ['LAMAR',      'Vernon',             140, 137, 'LAMAR COUNTY - VERNON',             'CST'],
+  ['LAUDERDALE', 'Florence',           156, 142, 'LAUDERDALE COUNTY - FLORENCE',      'CST'],
+  ['LAWRENCE',   'Moulton',             73,  75, 'LAWRENCE COUNTY - MOULTON',         'CST'],
+  ['LEE',        'Opelika',            141, 131, 'LEE COUNTY - OPELIKA',              'CST'],
+  ['LIMESTONE',  'Athens',              94,  87, 'LIMESTONE COUNTY - ATHENS',         'CST'],
+  ['LOWNDES',    'Hayneville',         141, 133, 'LOWNDES COUNTY - HAYNEVILLE',       'CST'],
+  ['MACON',      'Tuskegee',           157, 147, 'MACON COUNTY - TUSKEGEE',           'CST'],
+  ['MADISON',    'Huntsville',          82,  78, 'MADISON COUNTY - HUNTSVILLE',       'CST'],
+  ['MARENGO',    'Linden',             152, 145, 'MARENGO COUNTY - LINDEN',           'CST'],
+  ['MARION',     'Hamilton',           117, 117, 'MARION COUNTY - HAMILTON',          'CST'],
+  ['MARSHALL',   'Guntersville',        39,  47, 'MARSHALL COUNTY - GUNTERSVILLE',    'CST'],
+  ['MOBILE',     'Mobile',             308, 278, 'MOBILE COUNTY - MOBILE',            'CST'],
+  ['MONROE',     'Monroeville',        218, 201, 'MONROE COUNTY - MONROEVILLE',       'CST'],
+  ['MONTGOMERY', 'Montgomery',         136, 127, 'MONTGOMERY COUNTY - MONTGOMERY',    'CST'],
+  ['MORGAN',     'Decatur',             69,  69, 'MORGAN COUNTY - DECATUR',           'CST'],
+  ['PERRY',      'Marion',             127, 121, 'PERRY COUNTY - MARION',             'CST'],
+  ['PICKENS',    'Carrollton',         144, 142, 'PICKENS COUNTY - CARROLLTON',       'CST'],
+  ['PIKE',       'Troy',               183, 170, 'PIKE COUNTY - TROY',                'CST'],
+  ['RANDOLPH',   'Wedowee',             79,  91, 'RANDOLPH COUNTY - WEDOWEE',         'CST'],
+  ['RUSSELL',    'Phenix City',        197, 182, 'RUSSELL COUNTY - PHENIX CITY',      'EST'],
+  ['ST. CLAIR',  'Ashville',            16,  19, 'ST. CLAIR COUNTY - ASHVILLE',       'CST'],
+  ['ST. CLAIR',  'Pell City',           29,  32, 'ST. CLAIR COUNTY - PELL CITY',      'CST'],
+  ['SHELBY',     'Columbiana',          73,  73, 'SHELBY COUNTY - COLUMBIANA',        'CST'],
+  ['SUMTER',     'Livingston',         168, 161, 'SUMTER COUNTY - LIVINGSTON',        'CST'],
+  ['TALLADEGA',  'Sylacauga',           71,  77, 'TALLADEGA COUNTY - SYLACAUGA',      'CST'],
+  ['TALLAPOOSA', 'Alexander City',      78,  85, 'TALLAPOOSA COUNTY -  ALEXANDER CITY','CST'],
+  ['TUSCALOOSA', 'Tuscaloosa',          87,  84, 'TUSCALOOSA COUNTY - TUSCALOOSA',    'CST'],
+  ['WALKER',     'Jasper',              69,  71, 'WALKER COUNTY - JASPER',            'CST'],
+  ['WASHINGTON', 'Chatom',             264, 247, 'WASHINGTON COUNTY - CHATOM',        'CST'],
+  ['WILCOX',     'Camden',             169, 160, 'WILCOX COUNTY - CAMDEN',            'CST'],
+  ['WINSTON',    'Double Springs',      57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS',   'CST'],,
   {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:175,non_fee:null},
   {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null}
@@ -3474,10 +3531,15 @@ function renderCounties() {
       ? '<button class="btn ghost sm" style="font-size:10px;padding:2px 7px;margin-top:3px;display:block" onclick="tcQuickAdd(this.getAttribute(\'data-loc\'))" data-loc="' + locKey + '" title="Add to Trip Calculator">+ Trip</button>'
       : '';
 
+    var tz   = r[5] || 'CST';
+    var tzCell = tz === 'EST'
+      ? '<span style="color:#e8a838;font-size:10px;font-weight:600">EST⚠</span>'
+      : '<span style="color:var(--muted);font-size:10px">CST</span>';
     return '<tr style="'+rowBg+'">'
       + '<td style="font-weight:'+(visited?'600':'400')+';color:'+(visited?'var(--text)':'var(--muted)')+'">'
         + name + (visited?'  <span style="color:var(--blue);font-size:9px">✓</span>':'') + '</td>'
       + '<td style="font-size:11px;color:var(--muted)">' + seat + '</td>'
+      + '<td style="text-align:center">' + tzCell + '</td>'
       + '<td class="mono" style="font-size:11px;color:var(--muted)">' + mi + ' / ' + rtMi + '</td>'
       + '<td class="mono" style="color:var(--blue);font-size:11px">' + (dm ? formatTime(dm) : '~'+Math.round(mi/0.9)+'m') + '</td>'
       + '<td class="mono" style="font-size:11px;color:var(--muted)">$' + miCost + '</td>'

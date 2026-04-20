@@ -1070,7 +1070,7 @@ let H = [
   {id:144,date:'2026-04-09',time:'13:30',hearing_num:'925917',style:'Velocity Investments, LLC v. Brian Smith',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:100,non_fee:null},
   {id:145,date:'2026-04-13',time:'09:00',hearing_num:'926521',style:'Bank of America v. Bethany Holland Scales',setting:'Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:150,non_fee:null},
   {id:146,date:'2026-04-15',time:'13:30',hearing_num:'926829',style:'Comenity Bank v. Codie Crawford',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:125},
-  {id:147,date:'2026-04-20',time:'09:00',hearing_num:'894564',style:'Lendmark Financial Services LLC v Teresa Kelley',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'',result:'Accepted',fee:175,non_fee:null},
+  {id:147,date:'2026-04-20',time:'09:00',hearing_num:'894564',style:'Lendmark Financial Services LLC v Teresa Kelley',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:148,date:'2026-05-05',time:'09:30',hearing_num:'901414',style:'Capital One v Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:149,date:'2026-06-04',time:'09:30',hearing_num:'901918',style:'Citibank v Nancy G Hayden',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:150,date:'2026-03-30',time:'13:30',hearing_num:'927401',style:'REPUBLIC FINANCE, LLC v. James Cain',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:125,non_fee:null},
@@ -1096,12 +1096,12 @@ let H = [
   {id:170,date:'2026-04-13',time:'09:00',hearing_num:'930342',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
   {id:171,date:'2026-04-15',time:'10:00',hearing_num:'929842',style:'CAPITAL ONE VS. FRANK BRANSCUM aka FRANK L BRANSCUM',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:100,non_fee:null},
   {id:172,date:'2026-04-16',time:'09:00',hearing_num:'928491',style:'American Express National Bank v. Rufus Carswell',setting:'Status Conf',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:173,date:'2026-04-20',time:'09:00',hearing_num:'930452',style:'LVNV FUNDING, LLC VS. ERICA CAMERON',setting:'Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
-  {id:174,date:'2026-04-20',time:'13:00',hearing_num:'930681',style:'Eco Credit Union v. Tineka Hawkins',setting:'In-Person',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
+  {id:173,date:'2026-04-20',time:'09:00',hearing_num:'930452',style:'LVNV FUNDING, LLC VS. ERICA CAMERON',setting:'Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:0,non_fee:150},
+  {id:174,date:'2026-04-20',time:'13:00',hearing_num:'930681',style:'Eco Credit Union v. Tineka Hawkins',setting:'In-Person',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:0,non_fee:150},
   {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
   {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:135,non_fee:null}
 ];
-let nextId = 177;
+let nextId = 180;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -3374,7 +3374,10 @@ var AL_COUNTIES = [
   ['WALKER',     'Jasper',           69,  71, null],
   ['WASHINGTON', 'Chatom',          264, 247, null],
   ['WILCOX',     'Camden',          169, 160, null],
-  ['WINSTON',    'Double Springs',   57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS'],
+  ['WINSTON',    'Double Springs',   57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS'],,
+  {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:175,non_fee:null},
+  {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:100,non_fee:null},
+  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null}
 ];
 
 function renderCounties() {

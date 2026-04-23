@@ -1132,10 +1132,10 @@ let H = [
   {id:163,date:'2026-04-06',time:'09:00',hearing_num:'929143',style:'LVNV Funding LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Completed',fee:150,non_fee:null},
   {id:164,date:'2026-04-07',time:'08:30',hearing_num:'929661',style:'CAPITAL ONE N.A. DISCOVER BANK V. JEFFERY JACKSON',setting:'Hearing',location:'CULLMAN COUNTY - CULLMAN',client_ref:'',result:'Completed',fee:250,non_fee:null},
   {id:165,date:'2026-04-09',time:'13:30',hearing_num:'930742',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Cancelled',fee:0,non_fee:75},
-  {id:166,date:'2026-04-21',time:'10:00',hearing_num:'930830',style:'Portfolio Recovery Associates v. Hannah Grimes',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:175,non_fee:null},
+  {id:166,date:'2026-04-21',time:'10:00',hearing_num:'930830',style:'Portfolio Recovery Associates v. Hannah Grimes',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:167,date:'2026-04-15',time:'10:00',hearing_num:'929496',style:'BANK OF AMERICA, N.A. vs. PATSY J. CAMPBELL',setting:'Motion',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:168,date:'2026-04-15',time:'13:30',hearing_num:'929388',style:'SOUTHERN ENERGY CREDIT UNION FKA APCO v. Trenton Martin',setting:'Bench Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:150,non_fee:null},
-  {id:169,date:'2026-04-23',time:'13:30',hearing_num:'929658',style:'Mariner Finance LLC v. Trenton Kemp',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Accepted',fee:175,non_fee:null},
+  {id:169,date:'2026-04-23',time:'13:30',hearing_num:'929658',style:'Mariner Finance LLC v. Trenton Kemp',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:170,date:'2026-04-13',time:'09:00',hearing_num:'930342',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
   {id:171,date:'2026-04-15',time:'10:00',hearing_num:'929842',style:'CAPITAL ONE VS. FRANK BRANSCUM aka FRANK L BRANSCUM',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:100,non_fee:null},
   {id:172,date:'2026-04-16',time:'09:00',hearing_num:'928491',style:'American Express National Bank v. Rufus Carswell',setting:'Status Conf',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
@@ -1144,7 +1144,7 @@ let H = [
   {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
   {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:135,non_fee:null}
 ];
-let nextId = 180;
+let nextId = 181;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -3103,11 +3103,15 @@ function tcClear() {
 }
 
 function tcRender() {
+  var BUFFER_MIN = 30;   // arrive this many min before hearing
+  var COURT_MIN_LOW  = 30; // minimum court time
+  var COURT_MIN_HIGH = 45; // maximum court time (used for "must leave by" latest)
+
   // ── Build input rows ───────────────────────────────────────────────────────
   $('tc-stops').innerHTML = tcStops.map(function(s, idx) {
     var isNew = s.loc ? tcIsNewCounty(s.loc) : false;
     var ctyRow = s.loc ? AL_COUNTIES.find(function(r){ return r[4]===s.loc||r[0]===s.loc; }) : null;
-    var tz     = ctyRow ? (ctyRow[5]||'CST') : 'CST';
+    var tz = ctyRow ? (ctyRow[5]||'CST') : 'CST';
     var tzBadge = tz === 'EST'
       ? '<span style="font-size:10px;color:#e8a838;background:rgba(232,168,56,.12);padding:1px 6px;border-radius:4px;border:1px solid #e8a838;flex-shrink:0">⚠ EST</span>'
       : '<span style="font-size:10px;color:var(--muted);padding:1px 6px;border-radius:4px;border:1px solid var(--bd);flex-shrink:0">CST</span>';
@@ -3144,61 +3148,121 @@ function tcRender() {
   var totalFee   = 0, totalMiles = 0, totalDrivMin = 0, totalCourtMin = 0;
   var rows       = [];
   var newCounties = [];
+  var warnings   = [];  // late / tight connection warnings
 
-  var stopData = validStops.map(function(s, idx) {
-    var m   = tcGetMiles(s.loc);
-    var ct  = getCourtMin(s.type);
+  // ── Build stop data with full forward-running timeline ────────────────────
+  // Each stop gets: hearingStart, arriveAt, departFrom (earliest & latest),
+  // driveToNext, mustLeaveBy (to make next hearing with 30min buffer)
+  var stopData = [];
+  var prevEndEarly = null;  // earliest the previous hearing could end (30min)
+  var prevEndLate  = null;  // latest the previous hearing could end (45min)
+  var prevLoc      = '__home__';
+
+  validStops.forEach(function(s, idx) {
+    var m      = tcGetMiles(s.loc);
     var isLead = !visited[s.loc];
     visited[s.loc] = true;
-
-    var isNew = tcIsNewCounty(s.loc);
+    var isNew  = tcIsNewCounty(s.loc);
     if (isNew && isLead && newCounties.indexOf(s.loc) < 0) newCounties.push(s.loc);
 
-    // Drive time from previous location
-    var prevLoc = idx === 0 ? '__home__' : validStops[idx-1].loc;
+    // Drive from previous location to this courthouse
     var driveFrom;
     if (idx === 0) {
       driveFrom = tcGetDriveHome(s.loc);
     } else if (prevLoc === s.loc) {
       driveFrom = 0;
     } else {
-      // Inter-courthouse: use absolute difference in drive-from-Oneonta times
-      // plus a routing buffer (15 min for nearby, 20 for distant)
       var dmPrev = tcGetDriveOffice(prevLoc);
       var dmThis = tcGetDriveOffice(s.loc);
       var diff   = Math.abs(dmThis - dmPrev);
-      var buf    = diff < 30 ? 20 : 25;
-      driveFrom  = diff + buf;
+      driveFrom  = diff + (diff < 30 ? 20 : 25);
     }
 
     var fee = isLead ? tcRecFee(s.loc, s.type) : recFee('', s.type);
-
-    if (isLead) {
-      totalMiles   += m;
-      totalDrivMin += driveFrom;
-      leadCourts[s.loc] = true;
-    }
-    totalFee      += fee;
-    totalCourtMin += ct;
+    if (isLead) { totalMiles += m; totalDrivMin += driveFrom; leadCourts[s.loc] = true; }
+    totalFee += fee;
+    // Use average court time (midpoint of 30-45) for totals
+    totalCourtMin += Math.round((COURT_MIN_LOW + COURT_MIN_HIGH) / 2);
 
     var hearingMins = tcTimeParse(s.time);
-    var departMins  = hearingMins !== null ? hearingMins - 30 - driveFrom : null;
-    var arriveMins  = hearingMins !== null ? hearingMins - 30 : null;
 
-    return { s:s, idx:idx, m:m, ct:ct, isLead:isLead, isNew:isNew,
-             driveFrom:driveFrom, fee:fee, prevLoc:prevLoc,
-             hearingMins:hearingMins, departMins:departMins, arriveMins:arriveMins };
+    // Depart from home/prev court: hearing time - buffer - drive
+    var departHome  = hearingMins !== null ? hearingMins - BUFFER_MIN - driveFrom : null;
+    var arriveAt    = hearingMins !== null ? hearingMins - BUFFER_MIN : null;  // 30min early
+
+    // Estimated finish window
+    var endEarly    = hearingMins !== null ? hearingMins + COURT_MIN_LOW  : null; // done in 30min
+    var endLate     = hearingMins !== null ? hearingMins + COURT_MIN_HIGH : null; // done in 45min
+
+    // Drive to NEXT courthouse (filled in on next iteration)
+    var driveToNext = null;
+
+    // ── Check if we can make this hearing given prev hearing's end time ────
+    var canMakeEarly = null; // can make it if prev ends at 30min mark
+    var canMakeLate  = null; // can make it if prev ends at 45min mark
+    var actualArriveIfEarly = null;
+    var actualArriveIfLate  = null;
+    var isLate = false;
+
+    if (idx > 0 && prevEndEarly !== null && hearingMins !== null) {
+      // If prev hearing done in 30min — can we make this one?
+      actualArriveIfEarly = prevEndEarly + driveFrom;
+      canMakeEarly = actualArriveIfEarly <= (hearingMins - 15); // at least 15min to spare
+
+      // If prev hearing runs 45min — do we make this one?
+      actualArriveIfLate  = prevEndLate  + driveFrom;
+      canMakeLate  = actualArriveIfLate  <= (hearingMins - 15);
+
+      // Are we outright late (arrive after hearing starts)?
+      isLate = actualArriveIfLate > hearingMins;
+    }
+
+    // Must-leave-by: to reach NEXT stop (if there is one) — filled on next pass
+    stopData.push({
+      s:s, idx:idx, m:m, isLead:isLead, isNew:isNew,
+      driveFrom:driveFrom, fee:fee, prevLoc:prevLoc,
+      hearingMins:hearingMins,
+      departHome:departHome,
+      arriveAt:arriveAt,
+      endEarly:endEarly,
+      endLate:endLate,
+      driveToNext:null,        // filled on next iteration
+      mustLeaveByEarly:null,   // to make next hearing arriving 30min early
+      mustLeaveByLate:null,    // to make next hearing arriving 15min early (minimum)
+      canMakeEarly:canMakeEarly,
+      canMakeLate:canMakeLate,
+      actualArriveIfEarly:actualArriveIfEarly,
+      actualArriveIfLate:actualArriveIfLate,
+      isLate:isLate,
+    });
+
+    prevEndEarly = endEarly;
+    prevEndLate  = endLate;
+    prevLoc      = s.loc;
   });
 
-  // Return drive from last court to office
-  var lastLoc      = validStops[validStops.length-1].loc;
-  var returnDrive  = tcGetDriveOffice(lastLoc);
-  totalDrivMin    += returnDrive;
-  var lastStop     = stopData[stopData.length-1];
-  var officeArrive = lastStop.hearingMins !== null
-    ? lastStop.hearingMins + lastStop.ct + returnDrive : null;
+  // Back-fill driveToNext and mustLeaveBy for each stop
+  for (var i = 0; i < stopData.length - 1; i++) {
+    var cur  = stopData[i];
+    var next = stopData[i+1];
+    var dtNext = next.driveFrom; // drive FROM this stop TO next
+    cur.driveToNext = dtNext;
+    // Must leave this courthouse by:
+    // to arrive 30min early at next = next.hearingMins - 30 - driveToNext
+    cur.mustLeaveByEarly = next.hearingMins !== null ? next.hearingMins - 30 - dtNext : null;
+    // to arrive 15min early (minimum buffer) = next.hearingMins - 15 - driveToNext
+    cur.mustLeaveByLate  = next.hearingMins !== null ? next.hearingMins - 15 - dtNext : null;
+  }
 
-  // Build table rows
+  // Return drive
+  var lastLoc     = validStops[validStops.length-1].loc;
+  var returnDrive = tcGetDriveOffice(lastLoc);
+  totalDrivMin   += returnDrive;
+  var lastSD      = stopData[stopData.length-1];
+  var officeArriveEarly = lastSD.endEarly !== null ? lastSD.endEarly + returnDrive : null;
+  var officeArriveLate  = lastSD.endLate  !== null ? lastSD.endLate  + returnDrive : null;
+
+  // ── Build table rows ──────────────────────────────────────────────────────
   stopData.forEach(function(sd) {
     var s = sd.s;
     var shortLoc = (function(){
@@ -3210,63 +3274,112 @@ function tcRender() {
       return s.loc.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
     })();
 
-    var fromLabel = sd.idx === 0
-      ? '🏠 Home (Remlap)'
+    var fromLabel = sd.idx === 0 ? '🏠 Home (Remlap)'
       : sd.prevLoc === s.loc ? 'Same courthouse'
       : (function(){
           var pr = AL_COUNTIES.find(function(r){ return r[4]===sd.prevLoc||r[0]===sd.prevLoc; });
           return pr ? pr[0]+' Co.' : 'prev court';
         })();
 
-    var driveLabel = sd.idx === 0 || sd.prevLoc !== s.loc
-      ? formatTime(sd.driveFrom) : 'on-site';
+    // Departure / arrival cell (stop 0: depart home)
+    var departCell;
+    if (sd.idx === 0) {
+      departCell = sd.departHome !== null
+        ? '<span style="color:var(--green);font-weight:600">'+tcTimeFmt(sd.departHome)+'</span>'
+          + '<br><span style="color:var(--muted);font-size:10px">arrive '+tcTimeFmt(sd.arriveAt)+'</span>'
+        : '<span style="color:var(--muted)">—</span>';
+    } else {
+      // Show actual arrival if coming from prev courthouse
+      if (sd.actualArriveIfEarly !== null) {
+        var earlyOk = sd.canMakeEarly;
+        var lateOk  = sd.canMakeLate;
+        var arrClr  = sd.isLate ? '#e74c3c' : (!lateOk ? '#e8a838' : 'var(--green)');
+        var statusIcon = sd.isLate ? '🔴 LATE' : (!lateOk ? '🟡 TIGHT' : (!earlyOk ? '🟡 OK if quick' : '🟢 OK'));
+        departCell =
+          '<span style="color:'+arrClr+';font-weight:600;font-size:10px">'+statusIcon+'</span>'
+          + '<br><span style="color:var(--muted);font-size:10px">'
+          + 'arr '+tcTimeFmt(sd.actualArriveIfEarly)+'–'+tcTimeFmt(sd.actualArriveIfLate)
+          + '</span>';
+      } else {
+        departCell = '<span style="color:var(--muted)">—</span>';
+      }
+    }
 
-    var departCell = sd.departMins !== null
-      ? '<span style="color:var(--green);font-weight:600">'+tcTimeFmt(sd.departMins)+'</span>'
-        + '<br><span style="color:var(--muted);font-size:10px">arrive '+tcTimeFmt(sd.arriveMins)+'</span>'
-      : '<span style="color:var(--muted)">—</span>';
+    // Must leave by / finish by cell
+    var finishCell;
+    if (sd.mustLeaveByEarly !== null) {
+      var mustClr = (sd.endEarly > sd.mustLeaveByLate) ? '#e74c3c'
+                  : (sd.endLate  > sd.mustLeaveByLate) ? '#e8a838' : 'var(--green)';
+      finishCell =
+        '<span style="color:var(--muted);font-size:10px">finish by</span><br>'
+        + '<span style="color:'+mustClr+';font-weight:600">'
+        + tcTimeFmt(sd.mustLeaveByEarly) + '</span>'
+        + '<br><span style="color:var(--muted);font-size:10px">latest '+tcTimeFmt(sd.mustLeaveByLate)+'</span>';
+    } else if (sd.endEarly !== null) {
+      // Last stop — show return depart window
+      finishCell =
+        '<span style="color:var(--muted);font-size:10px">est. done</span><br>'
+        + '<span style="color:var(--blue);font-weight:600">'
+        + tcTimeFmt(sd.endEarly)+'–'+tcTimeFmt(sd.endLate)+'</span>';
+    } else {
+      finishCell = '<span style="color:var(--muted)">—</span>';
+    }
 
     var roleLabel = sd.isLead
       ? '<span style="color:var(--accent);font-size:10px;font-weight:600">LEAD</span>'
       : '<span style="color:var(--blue);font-size:10px">+ADDL</span>';
-
     var newTag = sd.isNew && sd.isLead
       ? ' <span style="color:var(--green);font-size:9px;font-weight:600">★ NEW</span>' : '';
 
-    rows.push('<tr style="'+(sd.isLead?'':'opacity:.85')+'">'
+    var rowBg = sd.isLate ? 'background:rgba(231,76,60,.05);'
+              : (!sd.canMakeLate && sd.idx > 0 && sd.canMakeLate !== null) ? 'background:rgba(232,168,56,.05);' : '';
+
+    rows.push('<tr style="'+(sd.isLead?'':'opacity:.85')+rowBg+'">'
       + '<td class="mono" style="color:var(--muted);font-size:11px">'+(sd.idx+1)+'</td>'
       + '<td style="font-size:11px;font-weight:500">'+shortLoc+newTag+'</td>'
       + '<td style="font-size:11px;color:var(--muted)">'+s.type+'</td>'
       + '<td class="mono" style="font-size:11px;color:var(--text)">'+(s.time ? tcTimeFmt(tcTimeParse(s.time)) : '—')+'</td>'
-      + '<td style="font-size:11px;line-height:1.5">'+departCell+'</td>'
+      + '<td style="font-size:11px;line-height:1.6">'+departCell+'</td>'
       + '<td style="font-size:10px;color:var(--muted)">'+fromLabel+'</td>'
-      + '<td class="mono" style="color:var(--blue);font-size:11px">'+driveLabel+'</td>'
+      + '<td class="mono" style="color:var(--blue);font-size:11px">'+formatTime(sd.driveFrom)+'</td>'
+      + '<td style="font-size:11px;line-height:1.6">'+finishCell+'</td>'
       + '<td class="mono" style="color:var(--muted);font-size:11px">'+(sd.isLead ? sd.m+' mi' : '—')+'</td>'
-      + '<td class="mono" style="color:var(--accent);font-size:11px">'+formatTime(sd.ct)+'</td>'
       + '<td>'+roleLabel+'</td>'
       + '<td class="mono" style="color:'+(sd.isLead?'var(--accent)':'var(--blue)')+';font-weight:600;font-size:12px">'+fmt(sd.fee)+'</td>'
       + '</tr>');
+
+    // Warn on late/tight
+    if (sd.isLate && sd.idx > 0) {
+      var pr = AL_COUNTIES.find(function(r){ return r[4]===sd.prevLoc||r[0]===sd.prevLoc; });
+      var prName = pr ? pr[0] : 'previous courthouse';
+      warnings.push('🔴 Stop '+(sd.idx+1)+' ('+shortLoc.replace(/<[^>]+>/g,'')+') — you will arrive AFTER the hearing starts if the '+prName+' hearing runs 45 minutes. Earliest possible arrival: '+tcTimeFmt(sd.actualArriveIfEarly)+', hearing at '+tcTimeFmt(sd.hearingMins)+'.');
+    } else if (sd.canMakeLate === false && sd.idx > 0) {
+      warnings.push('🟡 Stop '+(sd.idx+1)+' ('+shortLoc.replace(/<[^>]+>/g,'')+') — arrival is tight if the previous hearing runs long. Arrive by '+tcTimeFmt(sd.hearingMins - 15)+' minimum.');
+    }
   });
 
   // Return-to-office row
-  if (lastStop.hearingMins !== null) {
-    var retDepart = lastStop.hearingMins + lastStop.ct;
+  if (lastSD.endEarly !== null) {
+    var retDepartEarly = lastSD.endEarly;
+    var retDepartLate  = lastSD.endLate;
     var shortLast = (function(){
-      var r = AL_COUNTIES.find(function(r){ return r[4]===lastLoc||r[0]===lastLoc; });
+      var r = AL_COUNTIES.find(function(x){ return x[4]===lastLoc||x[0]===lastLoc; });
       return r ? r[0]+' Co.' : lastLoc.split(' - ').pop();
     })();
     rows.push('<tr style="opacity:.7;background:rgba(55,138,221,.04)">'
       + '<td class="mono" style="font-size:11px;color:var(--muted)">↩</td>'
       + '<td style="font-size:11px;color:var(--blue)">🏢 Return to Office</td>'
-      + '<td style="font-size:11px;color:var(--muted)">—</td>'
-      + '<td class="mono" style="font-size:11px;color:var(--muted)">—</td>'
-      + '<td style="font-size:11px"><span style="color:var(--blue)">'+tcTimeFmt(retDepart)+'</span>'
-        + '<br><span style="color:var(--muted);font-size:10px">arrive '+tcTimeFmt(officeArrive)+'</span></td>'
+      + '<td colspan="2" style="font-size:11px;color:var(--muted)">—</td>'
+      + '<td style="font-size:11px;line-height:1.6">'
+        + '<span style="color:var(--blue);font-weight:600">'+tcTimeFmt(retDepartEarly)+'–'+tcTimeFmt(retDepartLate)+'</span>'
+        + '<br><span style="color:var(--muted);font-size:10px">depart range</span></td>'
       + '<td style="font-size:10px;color:var(--muted)">from '+shortLast+'</td>'
       + '<td class="mono" style="color:var(--blue);font-size:11px">'+formatTime(returnDrive)+'</td>'
+      + '<td style="font-size:11px;line-height:1.6">'
+        + '<span style="color:var(--blue)">'+tcTimeFmt(officeArriveEarly)+'–'+tcTimeFmt(officeArriveLate)+'</span>'
+        + '<br><span style="color:var(--muted);font-size:10px">arrive office</span></td>'
       + '<td class="mono" style="color:var(--muted);font-size:11px">'+tcGetMiles(lastLoc)+' mi</td>'
       + '<td colspan="2" style="font-size:10px;color:var(--muted)">311A 1st Ave E, Oneonta</td>'
-      + '<td class="mono" style="color:var(--muted)">—</td>'
       + '</tr>');
   }
 
@@ -3274,17 +3387,32 @@ function tcRender() {
   var mileageCost = (rtMiles * MR).toFixed(2);
   var totalTripMin= totalDrivMin + totalCourtMin;
 
+  // Update table header to match new columns
+  var thead = document.querySelector('#tc-breakdown').closest('table').querySelector('thead tr');
+  if (thead) {
+    thead.innerHTML = '<th>#</th>'
+      + '<th style="text-align:left">COURTHOUSE</th>'
+      + '<th>TYPE</th>'
+      + '<th>HEARING</th>'
+      + '<th style="color:var(--green)">DEPART / STATUS</th>'
+      + '<th style="font-size:10px">FROM</th>'
+      + '<th style="color:var(--blue)">DRIVE</th>'
+      + '<th style="color:var(--accent)">FINISH / MUST LEAVE</th>'
+      + '<th>MILES OW</th>'
+      + '<th>ROLE</th>'
+      + '<th style="color:var(--accent)">FEE</th>';
+  }
+
   $('tc-breakdown').innerHTML = rows.join('');
   $('tc-foot').innerHTML = '<tr style="border-top:2px solid var(--bd);font-weight:600">'
     + '<td colspan="3" style="padding-top:8px;font-size:11px;color:var(--muted)">TOTALS</td>'
     + '<td colspan="2" style="font-size:11px;color:var(--muted);padding-top:8px">'
-      + (stopData[0].departMins!==null ? 'Depart '+tcTimeFmt(stopData[0].departMins) : '')
-      + (officeArrive!==null ? ' → Back '+tcTimeFmt(officeArrive) : '') + '</td>'
+      + (stopData[0].departHome!==null ? 'Depart '+tcTimeFmt(stopData[0].departHome) : '')
+      + (officeArriveLate!==null ? ' → Back by '+tcTimeFmt(officeArriveLate) : '') + '</td>'
     + '<td style="font-size:10px;color:var(--muted);padding-top:8px">Home → Courts → Office</td>'
     + '<td class="mono" style="color:var(--blue);padding-top:8px">'+formatTime(totalDrivMin)+'</td>'
-    + '<td class="mono" style="color:var(--muted);padding-top:8px">'+rtMiles+' mi</td>'
-    + '<td class="mono" style="color:var(--accent);padding-top:8px">'+formatTime(totalCourtMin)+'</td>'
-    + '<td></td>'
+    + '<td style="font-size:11px;color:var(--muted);padding-top:8px">'+rtMiles+' mi RT</td>'
+    + '<td colspan="2"></td>'
     + '<td class="mono" style="color:var(--accent);font-size:15px;padding-top:8px">'+fmt(totalFee)+'</td>'
     + '</tr>';
 
@@ -3302,22 +3430,21 @@ function tcRender() {
   var uniqueLeads = Object.keys(leadCourts).length;
   var addlCount   = validStops.length - uniqueLeads;
   var noteLines   = [];
-  noteLines.push('🏠 <strong>Departure:</strong> 958 Sunhill Road, Remlap AL — drive times from home.');
-  noteLines.push('🏢 <strong>Return:</strong> 311A 1st Ave E, Oneonta AL — included in totals.');
-  noteLines.push('⏰ Departure times allow <strong>30 minutes early arrival</strong> at each courthouse.');
+  noteLines.push('🏠 <strong>Departure:</strong> 958 Sunhill Rd, Remlap — all drive times from home for stop 1.');
+  noteLines.push('⏱ <strong>Court time estimated at 30–45 min per hearing.</strong> "Finish by" shows the time you need to leave each courthouse to make the next one with 30 min to spare. "Latest" is the absolute minimum (15 min buffer).');
+  noteLines.push('🚦 <strong>Status indicators:</strong> 🟢 OK = plenty of time &nbsp;|&nbsp; 🟡 TIGHT = cutting it close &nbsp;|&nbsp; 🔴 LATE = you will arrive after the hearing starts.');
+  if (warnings.length > 0) {
+    warnings.forEach(function(w){ noteLines.push(w); });
+  }
   if (newCounties.length > 0) {
     var newNames = newCounties.map(function(loc){
       var r = AL_COUNTIES.find(function(r){ return r[4]===loc||r[0]===loc; });
       return r ? r[0]+' County' : loc;
     });
-    noteLines.push('★ <strong style="color:var(--green)">New '+(newCounties.length>1?'counties':'county')+'!</strong> '
-      + newNames.join(', ') + ' — '+(newCounties.length>1?'these are':'this is')+' not yet in your hearing history.');
+    noteLines.push('★ <strong style="color:var(--green)">New county!</strong> '+newNames.join(', ')+' — not yet in your hearing history.');
   }
   if (addlCount > 0) {
     noteLines.push('📍 <strong>'+addlCount+' additional hearing'+(addlCount!==1?'s':'')+' at same courthouse</strong> billed at time-only rate.');
-  }
-  if (uniqueLeads > 1) {
-    noteLines.push('🗺 <strong>Multi-courthouse drive times</strong> are estimated — allow extra buffer for unfamiliar routes.');
   }
   if (totalTripMin > 0) {
     noteLines.push('💰 Effective rate: <strong>'+fmt(Math.round(totalFee/(totalTripMin/60)))+'/hr</strong> for a '+formatTime(totalTripMin)+' day.');
@@ -3326,6 +3453,7 @@ function tcRender() {
     return '<div style="margin-bottom:6px">'+n+'</div>';
   }).join('');
 }
+
 
 function tcMapRoute() {
   var validStops = tcStops.filter(function(s){ return s.loc; });
@@ -3434,7 +3562,8 @@ var AL_COUNTIES = [
   ['WINSTON',    'Double Springs',      57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS',   'CST'],,
   {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:175,non_fee:null},
   {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:100,non_fee:null},
-  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null}
+  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
+  {id:180,date:'2026-04-23',time:'11:00',hearing_num:'935196',style:'LVNV Funding vs. Chastity Pruitt',setting:'Small Claims',location:'TALLADEGA COUNTY - SYLACAUGA',client_ref:'',result:'Completed',fee:200,non_fee:null}
 ];
 
 function renderCounties() {

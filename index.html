@@ -1135,6 +1135,7 @@ let H = [
   {id:166,date:'2026-04-21',time:'10:00',hearing_num:'930830',style:'Portfolio Recovery Associates v. Hannah Grimes',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:167,date:'2026-04-15',time:'10:00',hearing_num:'929496',style:'BANK OF AMERICA, N.A. vs. PATSY J. CAMPBELL',setting:'Motion',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:168,date:'2026-04-15',time:'13:30',hearing_num:'929388',style:'SOUTHERN ENERGY CREDIT UNION FKA APCO v. Trenton Martin',setting:'Bench Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:150,non_fee:null},
+  {id:180,date:'2026-04-23',time:'11:00',hearing_num:'935196',style:'LVNV Funding vs. Chastity Pruitt',setting:'Small Claims',location:'TALLADEGA COUNTY - SYLACAUGA',client_ref:'',result:'Completed',fee:200,non_fee:null},
   {id:169,date:'2026-04-23',time:'13:30',hearing_num:'929658',style:'Mariner Finance LLC v. Trenton Kemp',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:170,date:'2026-04-13',time:'09:00',hearing_num:'930342',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
   {id:171,date:'2026-04-15',time:'10:00',hearing_num:'929842',style:'CAPITAL ONE VS. FRANK BRANSCUM aka FRANK L BRANSCUM',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:100,non_fee:null},
@@ -1492,7 +1493,7 @@ function renderDash() {
         var vs = s.indexOf(' v. ');
         if(vs<0) vs = s.indexOf(' vs. ');
         if(vs<0) vs = s.indexOf(' V. ');
-        return vs>=0 ? s.substring(vs+4).trim() : s;
+        return vs>=0 ? s.substring(vs+5).trim() : s;
       })();
       var statusColor = h.result==='Completed'?'var(--green)':h.result==='Accepted'?'var(--blue)':'var(--muted)';
       return '<div style="padding:8px 0;border-bottom:.5px solid var(--bd);display:flex;gap:10px;align-items:flex-start">'
@@ -3562,8 +3563,8 @@ var AL_COUNTIES = [
   ['WINSTON',    'Double Springs',      57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS',   'CST'],,
   {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:175,non_fee:null},
   {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:100,non_fee:null},
-  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:180,date:'2026-04-23',time:'11:00',hearing_num:'935196',style:'LVNV Funding vs. Chastity Pruitt',setting:'Small Claims',location:'TALLADEGA COUNTY - SYLACAUGA',client_ref:'',result:'Completed',fee:200,non_fee:null}
+  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null
+}
 ];
 
 function renderCounties() {

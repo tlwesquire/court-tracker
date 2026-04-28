@@ -249,6 +249,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   </div>
   <div class="stat-row" id="dash-stats"></div>
   <div id="dash-alert"></div>
+  <div id="dash-reprice-alert"></div>
 
   <!-- Today + Tomorrow hearing panels -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px" id="dash-day-panels">
@@ -1145,7 +1146,7 @@ let H = [
   {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
   {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:135,non_fee:null}
 ];
-let nextId = 181;
+let nextId = 190;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -1457,6 +1458,125 @@ function renderDash() {
     $('dash-alert').innerHTML = '<div class="alert"><span style="font-size:16px">⚠️</span><div><strong>'+under.length+' completed hearings</strong> were charged below 70% of the recommended rate. Estimated missed revenue: <strong style="color:var(--accent)">'+fmt(Math.round(miss))+'</strong>. See Fair Rate Analysis for details.</div></div>';
   } else {
     $('dash-alert').innerHTML = '';
+  }
+
+  // ── Bundle-cancelled repricing alerts ───────────────────────────────────────
+  // Detect: a hearing that was part of a bundle where another member got cancelled,
+  // and the remaining fee is now below the solo recommended rate
+  var repriceAlerts = [];
+  H.forEach(function(h) {
+    if (!h.location) return;
+    if ((h.result||'').trim() === 'Cancelled') return;
+    if (!h.fee || h.fee <= 0) return;
+
+    var dd = d(h.id);
+    if (!dd) return;
+
+    // Was this hearing originally part of a bundle?
+    // Check if any cancelled hearing shares same date+location
+    var bundleKey = h.date + '|' + h.location;
+    var allSameSlot = H.filter(function(x){ return x.date === h.date && x.location === h.location; });
+    var cancelledPartners = allSameSlot.filter(function(x){
+      return x.id !== h.id && (x.result||'').trim() === 'Cancelled';
+    });
+    var activeParters = allSameSlot.filter(function(x){
+      return x.id !== h.id && (x.result||'').trim() !== 'Cancelled';
+    });
+
+    if (cancelledPartners.length === 0) return; // no cancelled partners → skip
+
+    // This hearing HAD a bundle partner that was cancelled
+    // What would the solo recommended fee be?
+    var soloRec = recFee(h.location, h.setting);
+    var currentFee = h.fee;
+
+    // What was the original bundled recommended total?
+    // Lead = full recFee, additional = zero-dist rate
+    // If this was NOT the lead originally (bundlePos > 0), the combined was lead+this
+    // But now lead/additional roles may have changed since partner cancelled
+
+    // Current bundlePos in CACHE may have changed since cancellation removed partner from bundle
+    // So check: is currentFee < soloRec?
+    if (currentFee < soloRec * 0.85) { // under 85% of solo rate = needs repricing
+      var cancelledNames = cancelledPartners.map(function(x){
+        return '"'+(x.style||'').split(' v. ').pop().split(' vs. ').pop().trim()+'"';
+      }).join(', ');
+      var shortage = soloRec - currentFee;
+
+      repriceAlerts.push({
+        id: h.id,
+        style: h.style,
+        date: h.date,
+        location: h.location,
+        setting: h.setting,
+        currentFee: currentFee,
+        soloRec: soloRec,
+        shortage: shortage,
+        cancelledNames: cancelledNames,
+        num: h.hearing_num,
+      });
+    }
+  });
+
+  var raDiv = $('dash-reprice-alert');
+  if (raDiv) {
+    if (repriceAlerts.length > 0) {
+      var raHtml = '<div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.4);border-radius:10px;padding:14px 16px;margin-bottom:12px">'
+        + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+          + '<span style="font-size:20px">🔄</span>'
+          + '<div><strong style="color:#e8a838;font-size:14px">Bundle Repricing Required</strong>'
+          + '<div style="font-size:12px;color:var(--muted);margin-top:2px">'
+          + repriceAlerts.length + ' hearing'+(repriceAlerts.length!==1?'s':'')+' had a bundle partner cancelled and may now be underpriced as a solo hearing.</div></div>'
+        + '</div>'
+        + repriceAlerts.map(function(ra) {
+            var shortLoc = ra.location.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
+            var defName  = (function(){
+              var s = ra.style||'';
+              var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
+              return vs>=0 ? s.substring(vs+5).trim() : s;
+            })();
+            return '<div style="background:var(--s1);border:1px solid rgba(232,168,56,.3);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
+              + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'
+                + '<div>'
+                  + '<div style="font-size:13px;font-weight:600;color:var(--text)">'+defName+'</div>'
+                  + '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+shortLoc+' &nbsp;·&nbsp; '+ra.setting+' &nbsp;·&nbsp; '+ra.date+'</div>'
+                  + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Hearing #'+ra.num+' &nbsp;·&nbsp; Bundle partner(s) cancelled: '+ra.cancelledNames+'</div>'
+                + '</div>'
+                + '<div style="text-align:right;flex-shrink:0">'
+                  + '<div style="font-size:11px;color:var(--muted)">Current fee</div>'
+                  + '<div style="font-size:18px;font-weight:700;color:#e74c3c">'+fmt(ra.currentFee)+'</div>'
+                + '</div>'
+              + '</div>'
+              + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">'
+                + '<div style="background:rgba(231,76,60,.06);border-radius:6px;padding:8px 10px;text-align:center">'
+                  + '<div style="font-size:10px;color:var(--muted)">YOU CHARGED</div>'
+                  + '<div style="font-size:16px;font-weight:700;color:#e74c3c">'+fmt(ra.currentFee)+'</div>'
+                  + '<div style="font-size:10px;color:var(--muted)">(bundle rate)</div>'
+                + '</div>'
+                + '<div style="background:rgba(63,185,80,.06);border-radius:6px;padding:8px 10px;text-align:center">'
+                  + '<div style="font-size:10px;color:var(--muted)">SOLO REC. RATE</div>'
+                  + '<div style="font-size:16px;font-weight:700;color:var(--green)">'+fmt(ra.soloRec)+'</div>'
+                  + '<div style="font-size:10px;color:var(--muted)">(standalone)</div>'
+                + '</div>'
+                + '<div style="background:rgba(232,168,56,.08);border-radius:6px;padding:8px 10px;text-align:center">'
+                  + '<div style="font-size:10px;color:var(--muted)">REQUEST INCREASE</div>'
+                  + '<div style="font-size:16px;font-weight:700;color:#e8a838">+'+fmt(ra.shortage)+'</div>'
+                  + '<div style="font-size:10px;color:var(--muted)">to reach rec. rate</div>'
+                + '</div>'
+              + '</div>'
+              + '<div style="margin-top:10px;padding:8px 10px;background:rgba(232,168,56,.05);border-radius:6px;font-size:12px;color:var(--text2)">'
+                + '📋 <strong>Action:</strong> Contact Nationwide and request a repricing to '
+                + '<strong style="color:var(--green)">'+fmt(ra.soloRec)+'</strong>'
+                + ' — your bundle partner was cancelled, leaving this as a solo hearing at the original site. '
+                + 'You are owed an additional <strong style="color:#e8a838">'+fmt(ra.shortage)+'</strong>.'
+              + '</div>'
+            + '</div>';
+          }).join('')
+        + '</div>';
+      raDiv.innerHTML = raHtml;
+    } else {
+      raDiv.innerHTML = '';
+    }
   }
 
   // ── Today + Tomorrow hearing panels ────────────────────────────────────────
@@ -3564,7 +3684,16 @@ var AL_COUNTIES = [
   {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:175,non_fee:null},
   {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null
-}
+},
+  {id:181,date:'2026-05-05',time:'09:00',hearing_num:'932929',style:'Bank of America v. Donald Winchester',setting:'Bench Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
+  {id:182,date:'2026-05-05',time:'09:00',hearing_num:'932933',style:'LVNV Funding v. Terry Manning',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
+  {id:183,date:'2026-05-05',time:'09:30',hearing_num:'901414',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
+  {id:184,date:'2026-05-06',time:'09:00',hearing_num:'920946',style:'Republic Finance LLC v. Chiquera M Cox',setting:'Hearing',location:'ETOWAH COUNTY - GADSDEN',client_ref:'',result:'Accepted',fee:125,non_fee:null},
+  {id:185,date:'2026-05-11',time:'10:00',hearing_num:'935839',style:'1st Franklin Financial Corp. v. Cherlyn McVay',setting:'Bench Trial',location:'TUSCALOOSA COUNTY - TUSCALOOSA',client_ref:'',result:'Accepted',fee:225,non_fee:null},
+  {id:186,date:'2026-05-14',time:'09:00',hearing_num:'936203',style:'Capital One, N.A. v. Charles R. Huckabee',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'',result:'Accepted',fee:225,non_fee:null},
+  {id:187,date:'2026-05-27',time:'10:00',hearing_num:'919879',style:'Lendmark Financial Services LLC v. John Moffett',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:125,non_fee:null},
+  {id:188,date:'2026-06-04',time:'09:30',hearing_num:'901918',style:'Citibank v. Nancy G Hayden',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
+  {id:189,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v Kelly Caldwell',setting:'Trial',location:'',client_ref:'',result:'Accepted',fee:225,non_fee:null}
 ];
 
 function renderCounties() {

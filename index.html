@@ -237,6 +237,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   <div class="tab" onclick="go('import')">📥 Import</div>
   <div class="tab" onclick="go('tripcalc')">🗺 Trip Calc</div>
   <div class="tab" onclick="go('counties')">🏛 AL Counties</div>
+  <div class="tab" onclick="go('reprice')">🔄 Repricing</div>
 </div>
 
 <div class="main">
@@ -249,7 +250,6 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   </div>
   <div class="stat-row" id="dash-stats"></div>
   <div id="dash-alert"></div>
-  <div id="dash-reprice-alert"></div>
 
   <!-- Today + Tomorrow hearing panels -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px" id="dash-day-panels">
@@ -851,6 +851,34 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   </div>
 </div>
 
+
+<!-- ══ REPRICING ALERTS ══ -->
+<div class="panel" id="panel-reprice">
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">🔄 Repricing Alerts — Underpriced &amp; Bundle-Impacted Hearings</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px">
+      This tab shows two types of pricing issues: <strong style="color:#e74c3c">underpriced hearings</strong>
+      where the fee charged was below the recommended rate, and <strong style="color:#e8a838">bundle-impacted hearings</strong>
+      where a partner hearing was cancelled, leaving you underpriced as a solo appearance.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+      <select class="fs" id="rp-filter" onchange="renderReprice()" style="font-size:12px">
+        <option value="all">All Issues</option>
+        <option value="under">Underpriced Only</option>
+        <option value="bundle">Bundle-Cancelled Only</option>
+      </select>
+      <select class="fs" id="rp-status" onchange="renderReprice()" style="font-size:12px">
+        <option value="">All Statuses</option>
+        <option value="Completed">Completed</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Pending">Pending</option>
+      </select>
+    </div>
+  </div>
+  <div id="rp-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
+  <div id="rp-body"></div>
+</div>
+
 </div><!-- /main -->
 
 <!-- DETAIL MODAL -->
@@ -1140,11 +1168,11 @@ let H = [
   {id:169,date:'2026-04-23',time:'13:30',hearing_num:'929658',style:'Mariner Finance LLC v. Trenton Kemp',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:175,non_fee:null},
   {id:170,date:'2026-04-13',time:'09:00',hearing_num:'930342',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
   {id:171,date:'2026-04-15',time:'10:00',hearing_num:'929842',style:'CAPITAL ONE VS. FRANK BRANSCUM aka FRANK L BRANSCUM',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Completed',fee:100,non_fee:null},
-  {id:172,date:'2026-04-16',time:'09:00',hearing_num:'928491',style:'American Express National Bank v. Rufus Carswell',setting:'Status Conf',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
+  {id:172,date:'2026-04-16',time:'09:00',hearing_num:'928491',style:'American Express National Bank v. Rufus Carswell',setting:'Status Conf',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Completed',fee:150,non_fee:null},
   {id:173,date:'2026-04-20',time:'09:00',hearing_num:'930452',style:'LVNV FUNDING, LLC VS. ERICA CAMERON',setting:'Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
   {id:174,date:'2026-04-20',time:'13:00',hearing_num:'930681',style:'Eco Credit Union v. Tineka Hawkins',setting:'In-Person',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
-  {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:135,non_fee:null}
+  {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
+  {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Completed',fee:135,non_fee:null}
 ];
 let nextId = 190;
 
@@ -1401,6 +1429,8 @@ function fmtTime12(t) {
   var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ap;
 }
+function goReprice() { go("reprice"); }
+
 function renderDash() {
   const comp = H.filter(h => h.result === 'Completed');
   const rev = comp.reduce((s, h) => s + (h.fee || 0), 0);
@@ -1454,130 +1484,48 @@ function renderDash() {
   const under = comp.filter(h => h.location && h.fee && d(h.id).vrd === 'under');
   const miss = under.reduce((s,h) => s + d(h.id).r - h.fee, 0);
   // Underpriced alert only (role banner is static HTML above stats)
-  if (under.length) {
-    $('dash-alert').innerHTML = '<div class="alert"><span style="font-size:16px">⚠️</span><div><strong>'+under.length+' completed hearings</strong> were charged below 70% of the recommended rate. Estimated missed revenue: <strong style="color:var(--accent)">'+fmt(Math.round(miss))+'</strong>. See Fair Rate Analysis for details.</div></div>';
-  } else {
-    $('dash-alert').innerHTML = '';
-  }
-
-  // ── Bundle-cancelled repricing alerts ───────────────────────────────────────
-  // Detect: a hearing that was part of a bundle where another member got cancelled,
-  // and the remaining fee is now below the solo recommended rate
-  var repriceAlerts = [];
+  // ── Dashboard alert cards ───────────────────────────────────────────────────
+  // Compute bundle-impacted hearings count for dashboard badge
+  var bundleImpacted = 0, bundleShortage = 0;
   H.forEach(function(h) {
-    if (!h.location) return;
-    if ((h.result||'').trim() === 'Cancelled') return;
-    if (!h.fee || h.fee <= 0) return;
-
-    var dd = d(h.id);
-    if (!dd) return;
-
-    // Was this hearing originally part of a bundle?
-    // Check if any cancelled hearing shares same date+location
-    var bundleKey = h.date + '|' + h.location;
-    var allSameSlot = H.filter(function(x){ return x.date === h.date && x.location === h.location; });
-    var cancelledPartners = allSameSlot.filter(function(x){
-      return x.id !== h.id && (x.result||'').trim() === 'Cancelled';
-    });
-    var activeParters = allSameSlot.filter(function(x){
-      return x.id !== h.id && (x.result||'').trim() !== 'Cancelled';
-    });
-
-    if (cancelledPartners.length === 0) return; // no cancelled partners → skip
-
-    // This hearing HAD a bundle partner that was cancelled
-    // What would the solo recommended fee be?
+    if (!h.location || (h.result||'').trim()==='Cancelled' || !h.fee) return;
+    var allSameSlot = H.filter(function(x){ return x.date===h.date && x.location===h.location; });
+    var hasCancelledPartner = allSameSlot.some(function(x){ return x.id!==h.id && (x.result||'').trim()==='Cancelled'; });
+    if (!hasCancelledPartner) return;
     var soloRec = recFee(h.location, h.setting);
-    var currentFee = h.fee;
-
-    // What was the original bundled recommended total?
-    // Lead = full recFee, additional = zero-dist rate
-    // If this was NOT the lead originally (bundlePos > 0), the combined was lead+this
-    // But now lead/additional roles may have changed since partner cancelled
-
-    // Current bundlePos in CACHE may have changed since cancellation removed partner from bundle
-    // So check: is currentFee < soloRec?
-    if (currentFee < soloRec * 0.85) { // under 85% of solo rate = needs repricing
-      var cancelledNames = cancelledPartners.map(function(x){
-        return '"'+(x.style||'').split(' v. ').pop().split(' vs. ').pop().trim()+'"';
-      }).join(', ');
-      var shortage = soloRec - currentFee;
-
-      repriceAlerts.push({
-        id: h.id,
-        style: h.style,
-        date: h.date,
-        location: h.location,
-        setting: h.setting,
-        currentFee: currentFee,
-        soloRec: soloRec,
-        shortage: shortage,
-        cancelledNames: cancelledNames,
-        num: h.hearing_num,
-      });
-    }
+    if (h.fee < soloRec * 0.85) { bundleImpacted++; bundleShortage += soloRec - h.fee; }
   });
 
-  var raDiv = $('dash-reprice-alert');
-  if (raDiv) {
-    if (repriceAlerts.length > 0) {
-      var raHtml = '<div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.4);border-radius:10px;padding:14px 16px;margin-bottom:12px">'
-        + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
-          + '<span style="font-size:20px">🔄</span>'
-          + '<div><strong style="color:#e8a838;font-size:14px">Bundle Repricing Required</strong>'
-          + '<div style="font-size:12px;color:var(--muted);margin-top:2px">'
-          + repriceAlerts.length + ' hearing'+(repriceAlerts.length!==1?'s':'')+' had a bundle partner cancelled and may now be underpriced as a solo hearing.</div></div>'
-        + '</div>'
-        + repriceAlerts.map(function(ra) {
-            var shortLoc = ra.location.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
-            var defName  = (function(){
-              var s = ra.style||'';
-              var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
-              return vs>=0 ? s.substring(vs+5).trim() : s;
-            })();
-            return '<div style="background:var(--s1);border:1px solid rgba(232,168,56,.3);border-radius:8px;padding:12px 14px;margin-bottom:8px">'
-              + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'
-                + '<div>'
-                  + '<div style="font-size:13px;font-weight:600;color:var(--text)">'+defName+'</div>'
-                  + '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+shortLoc+' &nbsp;·&nbsp; '+ra.setting+' &nbsp;·&nbsp; '+ra.date+'</div>'
-                  + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Hearing #'+ra.num+' &nbsp;·&nbsp; Bundle partner(s) cancelled: '+ra.cancelledNames+'</div>'
-                + '</div>'
-                + '<div style="text-align:right;flex-shrink:0">'
-                  + '<div style="font-size:11px;color:var(--muted)">Current fee</div>'
-                  + '<div style="font-size:18px;font-weight:700;color:#e74c3c">'+fmt(ra.currentFee)+'</div>'
-                + '</div>'
-              + '</div>'
-              + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">'
-                + '<div style="background:rgba(231,76,60,.06);border-radius:6px;padding:8px 10px;text-align:center">'
-                  + '<div style="font-size:10px;color:var(--muted)">YOU CHARGED</div>'
-                  + '<div style="font-size:16px;font-weight:700;color:#e74c3c">'+fmt(ra.currentFee)+'</div>'
-                  + '<div style="font-size:10px;color:var(--muted)">(bundle rate)</div>'
-                + '</div>'
-                + '<div style="background:rgba(63,185,80,.06);border-radius:6px;padding:8px 10px;text-align:center">'
-                  + '<div style="font-size:10px;color:var(--muted)">SOLO REC. RATE</div>'
-                  + '<div style="font-size:16px;font-weight:700;color:var(--green)">'+fmt(ra.soloRec)+'</div>'
-                  + '<div style="font-size:10px;color:var(--muted)">(standalone)</div>'
-                + '</div>'
-                + '<div style="background:rgba(232,168,56,.08);border-radius:6px;padding:8px 10px;text-align:center">'
-                  + '<div style="font-size:10px;color:var(--muted)">REQUEST INCREASE</div>'
-                  + '<div style="font-size:16px;font-weight:700;color:#e8a838">+'+fmt(ra.shortage)+'</div>'
-                  + '<div style="font-size:10px;color:var(--muted)">to reach rec. rate</div>'
-                + '</div>'
-              + '</div>'
-              + '<div style="margin-top:10px;padding:8px 10px;background:rgba(232,168,56,.05);border-radius:6px;font-size:12px;color:var(--text2)">'
-                + '📋 <strong>Action:</strong> Contact Nationwide and request a repricing to '
-                + '<strong style="color:var(--green)">'+fmt(ra.soloRec)+'</strong>'
-                + ' — your bundle partner was cancelled, leaving this as a solo hearing at the original site. '
-                + 'You are owed an additional <strong style="color:#e8a838">'+fmt(ra.shortage)+'</strong>.'
-              + '</div>'
-            + '</div>';
-          }).join('')
-        + '</div>';
-      raDiv.innerHTML = raHtml;
-    } else {
-      raDiv.innerHTML = '';
-    }
+  var alertHtml = '';
+
+  if (under.length) {
+    alertHtml += '<div class="alert" style="cursor:pointer;text-decoration:none" onclick="goReprice()">' + '<span style="font-size:20px">💸</span>'
+      + '<span style="font-size:20px">💸</span>'
+      + '<div style="flex:1">'
+        + '<strong>' + under.length + ' underpriced hearing' + (under.length!==1?'s':'') + '</strong>'
+        + ' — charged below the recommended rate. Missed revenue: '
+        + '<strong style="color:var(--accent)">' + fmt(Math.round(miss)) + '</strong>.'
+        + ' <span style="color:var(--accent);font-size:11px">→ View in Repricing tab</span>'
+      + '</div>'
+      + '</div>';
   }
+
+  if (bundleImpacted > 0) {
+    alertHtml += '<div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.4);border-radius:8px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer" onclick="goReprice()">' + '<span style="font-size:20px;flex-shrink:0">🔄</span>'
+      + '<span style="font-size:20px;flex-shrink:0">🔄</span>'
+      + '<div style="flex:1">'
+        + '<strong style="color:#e8a838">' + bundleImpacted + ' bundle-impacted hearing' + (bundleImpacted!==1?'s':'') + ' need repricing</strong>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">'
+          + 'A cancelled bundle partner left ' + (bundleImpacted===1?'this hearing':'these hearings') + ' underpriced as solo appearance' + (bundleImpacted!==1?'s':'') + '. '
+          + 'Total increase needed: <strong style="color:#e8a838">+' + fmt(bundleShortage) + '</strong>.'
+        + '</div>'
+        + '<div style="font-size:11px;color:#e8a838;margin-top:4px">→ Click to view details and request amounts in Repricing tab</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  $('dash-alert').innerHTML = alertHtml;
+
 
   // ── Today + Tomorrow hearing panels ────────────────────────────────────────
   // Use local date (not UTC) to avoid midnight/timezone mismatches
@@ -2854,7 +2802,7 @@ function qqUpdate() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════════════════════════════════════════
-const TAB_ORDER = ['dash','hearings','fairrate','bundles','clients','calendar','time','rates','add','import','tripcalc','counties'];
+const TAB_ORDER = ['dash','hearings','fairrate','bundles','clients','calendar','time','rates','add','import','tripcalc','counties','reprice'];
 
 function go(name){
   TAB_ORDER.forEach((t,i)=>{
@@ -2874,6 +2822,7 @@ function go(name){
   if(name==='rates')    renderRateCard();
   if(name==='tripcalc') renderTripCalc();
   if(name==='counties') renderCounties();
+  if(name==='reprice')  renderReprice();
 }
 
 
@@ -3844,6 +3793,191 @@ function updateClock() {
 }
 updateClock();
 setInterval(updateClock, 1000);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REPRICING ALERTS TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function buildRepriceData() {
+  var underpriced = [], bundleImpacted = [];
+
+  H.forEach(function(h) {
+    if (!h.location) return;
+    if ((h.result||'').trim() === 'Cancelled') return;
+    if (!h.fee || h.fee <= 0) return;
+
+    var dd = d(h.id);
+    var soloRec = recFee(h.location, h.setting);
+    var currentFee = h.fee;
+
+    // ── Check for bundle-cancelled partners ────────────────────────────────
+    var allSameSlot = H.filter(function(x){ return x.date===h.date && x.location===h.location; });
+    var cancelledPartners = allSameSlot.filter(function(x){
+      return x.id !== h.id && (x.result||'').trim() === 'Cancelled';
+    });
+    var hasBundleIssue = cancelledPartners.length > 0 && currentFee < soloRec * 0.85;
+
+    if (hasBundleIssue) {
+      var cancelledNames = cancelledPartners.map(function(x){
+        var s = x.style||'';
+        var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
+        return vs>=0 ? s.substring(vs+5).trim() : s;
+      }).join(', ');
+      bundleImpacted.push({
+        id:h.id, style:h.style, date:h.date, location:h.location,
+        setting:h.setting, result:h.result, num:h.hearing_num,
+        currentFee:currentFee, soloRec:soloRec, shortage:soloRec-currentFee,
+        cancelledNames:cancelledNames, type:'bundle'
+      });
+    }
+
+    // ── Check for general underpricing (completed, not bundle issue) ───────
+    if (!hasBundleIssue && dd.vrd === 'under') {
+      underpriced.push({
+        id:h.id, style:h.style, date:h.date, location:h.location,
+        setting:h.setting, result:h.result, num:h.hearing_num,
+        currentFee:currentFee, soloRec:soloRec, shortage:soloRec-currentFee,
+        cancelledNames:null, type:'under', fair:dd.fair
+      });
+    }
+  });
+
+  return { underpriced:underpriced, bundleImpacted:bundleImpacted };
+}
+
+function renderReprice() {
+  var filter = ($('rp-filter')||{value:'all'}).value;
+  var statusFilter = ($('rp-status')||{value:''}).value;
+  var data = buildRepriceData();
+
+  var underpriced    = data.underpriced;
+  var bundleImpacted = data.bundleImpacted;
+
+  // Apply status filter
+  if (statusFilter) {
+    underpriced    = underpriced.filter(function(r){ return r.result===statusFilter; });
+    bundleImpacted = bundleImpacted.filter(function(r){ return r.result===statusFilter; });
+  }
+
+  var showUnder  = filter === 'all' || filter === 'under';
+  var showBundle = filter === 'all' || filter === 'bundle';
+
+  var totalShortage = 0;
+  if (showUnder)  underpriced.forEach(function(r){ totalShortage += r.shortage; });
+  if (showBundle) bundleImpacted.forEach(function(r){ totalShortage += r.shortage; });
+  var totalCount = (showUnder?underpriced.length:0) + (showBundle?bundleImpacted.length:0);
+
+  // KPI cards
+  $('rp-kpi').innerHTML = [
+    { l:'Total Issues',        v:totalCount,               s:'Hearings needing attention' },
+    { l:'Bundle-Impacted',     v:bundleImpacted.length,    s:'Partner cancelled → solo' },
+    { l:'Underpriced',         v:underpriced.length,       s:'Below 70% of rec. rate' },
+    { l:'Total $ to Request',  v:fmt(totalShortage),       s:'Combined increase needed' },
+  ].map(function(k){
+    return '<div class="stat"><div class="stat-lbl">'+k.l+'</div>'
+      +'<div class="stat-val" style="font-size:22px">'+k.v+'</div>'
+      +'<div class="stat-sub">'+k.s+'</div></div>';
+  }).join('');
+
+  var html = '';
+
+  // ── Section 1: Bundle-impacted ────────────────────────────────────────────
+  if (showBundle && bundleImpacted.length > 0) {
+    html += '<div class="card" style="margin-bottom:14px">'
+      + '<div class="card-title" style="color:#e8a838;margin-bottom:12px">🔄 Bundle-Cancelled Repricing ('
+      + bundleImpacted.length + ')</div>'
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">'
+        + 'These hearings had a bundle partner cancelled. As a solo hearing you are entitled to the full '
+        + 'standalone rate. Contact Nationwide to request a repricing for each.'
+      + '</div>';
+
+    bundleImpacted.forEach(function(ra) {
+      html += rpCard(ra, 'bundle');
+    });
+    html += '</div>';
+  }
+
+  // ── Section 2: Underpriced ───────────────────────────────────────────────
+  if (showUnder && underpriced.length > 0) {
+    html += '<div class="card" style="margin-bottom:14px">'
+      + '<div class="card-title" style="color:#e74c3c;margin-bottom:12px">💸 Underpriced Hearings ('
+      + underpriced.length + ')</div>'
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">'
+        + 'These completed hearings were charged below 70% of the recommended rate. '
+        + 'The recommended rate is based on driving distance from your Oneonta office.'
+      + '</div>';
+
+    underpriced.forEach(function(ra) {
+      html += rpCard(ra, 'under');
+    });
+    html += '</div>';
+  }
+
+  if (totalCount === 0) {
+    html = '<div class="card" style="text-align:center;padding:40px 20px">'
+      + '<div style="font-size:32px;margin-bottom:10px">✅</div>'
+      + '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px">No Repricing Issues Found</div>'
+      + '<div style="font-size:13px;color:var(--muted)">All hearings are priced at or above the recommended rate.</div>'
+      + '</div>';
+  }
+
+  $('rp-body').innerHTML = html;
+}
+
+function rpCard(ra, type) {
+  var shortLoc = ra.location ? ra.location.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ') : 'Unknown';
+  var s = ra.style||'';
+  var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
+  var defName  = vs>=0 ? s.substring(vs+5).trim() : s;
+  var creditor = vs>=0 ? s.substring(0,vs).trim() : '';
+  var isBundle = type === 'bundle';
+  var borderClr = isBundle ? 'rgba(232,168,56,.35)' : 'rgba(231,76,60,.25)';
+  var accentClr = isBundle ? '#e8a838' : '#e74c3c';
+  var actionTxt = isBundle
+    ? '📋 Contact Nationwide — request repricing to ' + fmt(ra.soloRec)
+      + '. Bundle partner (' + ra.cancelledNames + ') was cancelled, making this a solo hearing. '
+      + 'You are owed <strong style="color:#e8a838">+' + fmt(ra.shortage) + '</strong>.'
+    : '📋 This completed hearing was charged below the recommended rate. '
+      + 'Note for future reference: minimum for this courthouse and hearing type is '
+      + '<strong style="color:var(--green)">' + fmt(ra.soloRec) + '</strong>.';
+
+  return '<div style="background:var(--s1);border:1px solid '+borderClr+';border-radius:8px;padding:14px 16px;margin-bottom:10px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">'
+      + '<div style="flex:1">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--text)">'+defName+'</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">'
+          + creditor + (creditor ? ' &nbsp;·&nbsp; ' : '')
+          + shortLoc + ' &nbsp;·&nbsp; ' + ra.setting + ' &nbsp;·&nbsp; ' + ra.date
+        + '</div>'
+        + '<div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">'
+          + '<span style="font-size:10px;padding:1px 7px;border-radius:4px;border:1px solid var(--bd);color:var(--muted)">Hearing #'+ra.num+'</span>'
+          + '<span style="font-size:10px;padding:1px 7px;border-radius:4px;border:1px solid var(--bd);color:var(--muted)">'+ra.result+'</span>'
+          + (isBundle ? '<span style="font-size:10px;padding:1px 7px;border-radius:4px;border:1px solid rgba(232,168,56,.4);color:#e8a838">Bundle Impacted</span>' : '<span style="font-size:10px;padding:1px 7px;border-radius:4px;border:1px solid rgba(231,76,60,.3);color:#e74c3c">Underpriced</span>')
+        + '</div>'
+      + '</div>'
+      + '<button onclick="openModal('+ra.id+')" class="btn ghost sm" style="font-size:11px;flex-shrink:0">View</button>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+      + '<div style="background:rgba(231,76,60,.06);border-radius:6px;padding:8px 10px;text-align:center">'
+        + '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">CHARGED</div>'
+        + '<div style="font-size:18px;font-weight:700;color:#e74c3c">'+fmt(ra.currentFee)+'</div>'
+      + '</div>'
+      + '<div style="background:rgba(63,185,80,.06);border-radius:6px;padding:8px 10px;text-align:center">'
+        + '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">REC. RATE</div>'
+        + '<div style="font-size:18px;font-weight:700;color:var(--green)">'+fmt(ra.soloRec)+'</div>'
+      + '</div>'
+      + '<div style="background:rgba(232,168,56,.08);border-radius:6px;padding:8px 10px;text-align:center">'
+        + '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">'+(isBundle?'REQUEST':'SHORTFALL')+'</div>'
+        + '<div style="font-size:18px;font-weight:700;color:'+accentClr+'">+'+fmt(ra.shortage)+'</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="padding:8px 10px;background:rgba(0,0,0,.03);border-radius:6px;font-size:12px;color:var(--text2);line-height:1.6">'
+      + actionTxt
+    + '</div>'
+    + '</div>';
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════════

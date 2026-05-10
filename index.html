@@ -979,10 +979,15 @@ const DRIVE_MIN = {
 };
 const COURT_TIME_MIN = {
   'Hearing':30,'Trial':45,'Bench Trial':45,'In-Person':30,
+  'Zoom':35,            // 30min hearing + 5min setup/teardown
+  'Zoom Hearing':35,    // alias
   'Docket Call':20,'Status Conf':20,'Status Review':20,
   'Scheduling Conference':20,'Settle Conf':30,'Issue Conf':20,
   'Dismissal':15,'Continance':15,'Motion':30,
 };
+
+// Zoom buffer (minutes) to add when a zoom is adjacent to a physical hearing
+const ZOOM_BUFFER_MIN = 30;
 function getDriveMin(loc) { return DRIVE_MIN[loc] || 0; }
 function getCourtMin(s) { return COURT_TIME_MIN[s] || 30; }
 function formatTime(min) {
@@ -1143,7 +1148,7 @@ let H = [
   {id:145,date:'2026-04-13',time:'09:00',hearing_num:'926521',style:'Bank of America v. Bethany Holland Scales',setting:'Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:150,non_fee:null},
   {id:146,date:'2026-04-15',time:'13:30',hearing_num:'926829',style:'Comenity Bank v. Codie Crawford',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:125},
   {id:147,date:'2026-04-20',time:'09:00',hearing_num:'894564',style:'Lendmark Financial Services LLC v Teresa Kelley',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'',result:'Completed',fee:175,non_fee:null},
-  {id:148,date:'2026-05-05',time:'09:30',hearing_num:'901414',style:'Capital One v Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Cancelled',fee:0,non_fee:100},
+  {id:148,date:'2026-05-05',time:'09:30',hearing_num:'901414',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Cancelled',fee:0,non_fee:100},
   {id:149,date:'2026-06-04',time:'09:30',hearing_num:'901918',style:'Citibank v Nancy G Hayden',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:150,date:'2026-03-30',time:'13:30',hearing_num:'927401',style:'REPUBLIC FINANCE, LLC v. James Cain',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:125,non_fee:null},
   {id:151,date:'2026-04-09',time:'13:30',hearing_num:'927892',style:'LVNV FUNDING LLC V DOUGLAS JONES',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:75,non_fee:null},
@@ -1156,9 +1161,6 @@ let H = [
   {id:158,date:'2026-04-15',time:'09:00',hearing_num:'926837',style:'1st Franklin Financial v. Jasmine McElrath',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
   {id:159,date:'2026-04-16',time:'10:00',hearing_num:'927221',style:'Crown Asset Management v. Lisa Grat',setting:'Trial',location:'SHELBY COUNTY - COLUMBIANA',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
   {id:160,date:'2026-05-27',time:'10:00',hearing_num:'919879',style:'Lendmark Financial Services LLC v John Moffett',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:125,non_fee:null},
-  {id:161,date:'2026-04-02',time:'09:00',hearing_num:'928817',style:'First Southern Financial v. Ronald M Seymore',setting:'Bench Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'',result:'Completed',fee:150,non_fee:null},
-  {id:162,date:'2026-04-02',time:'09:00',hearing_num:'928970',style:'FNB Omaha v. Roger Kalonick',setting:'Bench Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'',result:'Completed',fee:125,non_fee:null},
-  {id:163,date:'2026-04-06',time:'09:00',hearing_num:'929143',style:'LVNV Funding LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Completed',fee:150,non_fee:null},
   {id:164,date:'2026-04-07',time:'08:30',hearing_num:'929661',style:'CAPITAL ONE N.A. DISCOVER BANK V. JEFFERY JACKSON',setting:'Hearing',location:'CULLMAN COUNTY - CULLMAN',client_ref:'',result:'Completed',fee:250,non_fee:null},
   {id:165,date:'2026-04-09',time:'13:30',hearing_num:'930742',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Cancelled',fee:0,non_fee:75},
   {id:166,date:'2026-04-21',time:'10:00',hearing_num:'930830',style:'Portfolio Recovery Associates v. Hannah Grimes',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Completed',fee:175,non_fee:null},
@@ -1174,7 +1176,7 @@ let H = [
   {id:175,date:'2026-04-29',time:'10:00',hearing_num:'932263',style:'Bank of America, NA vs. Timothy Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
   {id:176,date:'2026-04-30',time:'10:00',hearing_num:'930888',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Completed',fee:135,non_fee:null}
 ];
-let nextId = 196;
+let nextId = 200;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -1252,18 +1254,27 @@ const fmt = v => (v == null || isNaN(v)) ? '—' : '$' + Number(v).toLocaleStrin
 const fmtN = v => v == null ? '—' : Number(v).toLocaleString();
 
 function recFee(loc, setting) {
-  const m = (loc && DIST[loc]) ? DIST[loc] : 0; // empty loc = zero distance (bundle additional hearings)
-  const rt = m * 2 * MR;
   const s = (setting || '').toLowerCase();
+
+  // ── Zoom hearings: flat rate, no mileage ──────────────────────────────────
+  if (s.includes('zoom')) return 100; // $100 flat — fair rate for remote appearance
+
+  const m = (loc && DIST[loc]) ? DIST[loc] : 0;
+  const rt = m * 2 * MR;
   const isTrial = s.includes('trial') || s.includes('bench');
   let base;
-  if (m === 0)        base = isTrial ? 100 : 75;  // true on-site only (no drive)
+  if (m === 0)        base = isTrial ? 100 : 75;
   else if (m <= 20)   base = isTrial ? 150 : 100;
   else if (m <= 55)   base = isTrial ? 175 : 125;
   else if (m <= 85)   base = isTrial ? 225 : 150;
   else if (m <= 130)  base = isTrial ? 300 : 200;
   else                base = isTrial ? 450 : 300;
   return Math.max(base, Math.ceil((rt + 75) / 25) * 25);
+}
+
+// Returns true if a setting is a zoom/remote hearing
+function isZoom(setting) {
+  return (setting || '').toLowerCase().includes('zoom');
 }
 
 function statusChip(s) {
@@ -1438,7 +1449,8 @@ function renderDash() {
   const avg = comp.length ? Math.round(rev / comp.length) : 0;
   const bundles = Object.values(CACHE.bmap).filter(g => g.length > 1).length;
   const todayStr = new Date().toISOString().split('T')[0];
-  const upcoming = H.filter(h => h.date >= todayStr && h.result !== 'Cancelled').length;
+  const _localToday = (new Date()).getFullYear()+'-'+('0'+((new Date()).getMonth()+1)).slice(-2)+'-'+('0'+(new Date()).getDate()).slice(-2);
+  const upcoming = H.filter(h => h.date >= _localToday && h.result !== 'Cancelled' && h.result !== 'Completed').length;
   const underH = H.filter(function(h){ return h.location && h.fee && d(h.id).vrd==='under'; });
   const missAmt = underH.reduce(function(s,h){ return s+d(h.id).fair-(h.fee||0); }, 0);
 
@@ -1537,7 +1549,9 @@ function renderDash() {
   var _tomStr    = _tom.getFullYear() + '-'
     + ('0'+(_tom.getMonth()+1)).slice(-2) + '-'
     + ('0'+_tom.getDate()).slice(-2);
+  // Today: show all non-cancelled (including Completed — you want to see what happened today)
   var todayHearings    = H.filter(function(h){ return h.date === _todayStr && (h.result||'').trim() !== 'Cancelled'; });
+  // Tomorrow: show Accepted/Pending only (not yet completed)
   var tomorrowHearings = H.filter(function(h){ return h.date === _tomStr   && (h.result||'').trim() !== 'Cancelled'; });
 
   function fmtDayHearings(hearings, emptyMsg) {
@@ -1597,7 +1611,7 @@ function renderDash() {
 
   // Hide panels if neither has hearings (to save space)
   var dayPanels = $('dash-day-panels');
-  if (dayPanels) dayPanels.style.display = (todayHearings.length || tomorrowHearings.length) ? 'grid' : 'none';
+  if (dayPanels) dayPanels.style.display = 'grid'; // always show — panels show empty state message
   const dummy = null; if(dummy) $('dash-alert').innerHTML
     ? `<div class="alert"><span style="font-size:16px">⚠️</span><div><strong>${under.length} completed hearings</strong> were charged below 70% of the recommended rate. Estimated missed revenue: <strong style="color:var(--accent)">${fmt(Math.round(miss))}</strong>. See Fair Rate Analysis tab for details.</div></div>`
     : '';
@@ -3028,11 +3042,11 @@ var DRIVE_MIN_HOME = {};
 })();
 
 // Get one-way miles for ANY county (DIST keys or AL_COUNTIES fallback)
-function tcGetMiles(loc) {
+function tcGetMiles(loc, setting) {
+  if (isZoom(setting)) return 0; // zoom = no mileage
   if (DIST[loc]) return DIST[loc];
   var row = AL_COUNTIES.find(function(r){ return r[4] === loc; });
   if (row) return row[2];
-  // If using raw county name (from full list)
   row = AL_COUNTIES.find(function(r){ return r[0] === loc; });
   if (row) return row[2];
   return 0;
@@ -3063,6 +3077,7 @@ function tcGetDriveOffice(loc) {
 
 // Has this county ever been visited? (any hearing on file)
 function tcIsNewCounty(loc) {
+  if (!loc) return false; // zoom stops have no location
   // Check in app hearings
   var hasHistory = H.some(function(h){ return h.location === loc; });
   if (hasHistory) return false;
@@ -3121,7 +3136,7 @@ function tcMakeCountyOpts(selected) {
 }
 
 function tcMakeTypeOpts(selected) {
-  var types = ['Hearing','Trial','Bench Trial','Motion','In-Person','Docket Call',
+  var types = ['Hearing','Trial','Bench Trial','Motion','In-Person','Zoom','Zoom Hearing','Docket Call',
     'Status Conf','Status Review','Scheduling Conference','Settle Conf','Issue Conf','Dismissal','Continance'];
   return types.map(function(t){
     return '<option'+(t===selected?' selected':'')+'>'+t+'</option>';
@@ -3188,14 +3203,16 @@ function tcRender() {
     var newBadge = isNew
       ? '<span style="font-size:10px;color:var(--green);background:rgba(63,185,80,.12);padding:1px 6px;border-radius:4px;border:1px solid var(--green);flex-shrink:0">★ NEW COUNTY</span>'
       : '';
+    var zoomStop = isZoom(s.type);
     return '<div style="display:grid;grid-template-columns:22px 1fr 160px 110px 32px;gap:8px;align-items:center;'
       + 'margin-bottom:8px;padding:10px 12px;background:var(--s1);border-radius:8px;border:1px solid '
-      + (isNew ? 'var(--green)' : 'var(--bd)') + '">'
+      + (isNew ? 'var(--green)' : zoomStop ? 'rgba(124,58,237,.4)' : 'var(--bd)') + '">'
       + '<div style="font-size:12px;color:var(--muted);font-weight:600">'+(idx+1)+'</div>'
       + '<div style="display:flex;gap:6px;align-items:center;min-width:0">'
         + '<select class="fs" style="font-size:12px;flex:1" onchange="tcUpdateStop('+s.id+',\'loc\',this.value)">'
           + tcMakeCountyOpts(s.loc) + '</select>'
-        + (s.loc ? tzBadge : '')
+        + (s.loc && !zoomStop ? tzBadge : '')
+        + (zoomStop ? '<span style="font-size:10px;color:#7c3aed;background:rgba(124,58,237,.1);padding:1px 6px;border-radius:4px;border:1px solid rgba(124,58,237,.4);flex-shrink:0">📹 ZOOM — no mileage</span>' : '')
         + newBadge
       + '</div>'
       + '<select class="fs" style="font-size:12px" onchange="tcUpdateStop('+s.id+',\'type\',this.value)">'
@@ -3232,15 +3249,25 @@ function tcRender() {
     var m      = tcGetMiles(s.loc);
     var isLead = !visited[s.loc];
     visited[s.loc] = true;
-    var isNew  = tcIsNewCounty(s.loc);
+    var isNew  = !thisIsZoom && tcIsNewCounty(s.loc);
     if (isNew && isLead && newCounties.indexOf(s.loc) < 0) newCounties.push(s.loc);
 
     // Drive from previous location to this courthouse
+    var prevStop   = idx > 0 ? validStops[idx-1] : null;
+    var prevIsZoom = prevStop ? isZoom(prevStop.type) : false;
+    var thisIsZoom = isZoom(s.type);
     var driveFrom;
-    if (idx === 0) {
+
+    if (thisIsZoom) {
+      // Zoom hearing: no travel, but add buffer if adjacent to physical hearing
+      driveFrom = (idx > 0 && !prevIsZoom) ? ZOOM_BUFFER_MIN : 0;
+    } else if (idx === 0) {
       driveFrom = tcGetDriveHome(s.loc);
+    } else if (prevIsZoom) {
+      // Coming FROM a zoom to a physical courthouse — zoom buffer + drive from home
+      driveFrom = tcGetDriveHome(s.loc) + ZOOM_BUFFER_MIN;
     } else if (prevLoc === s.loc) {
-      driveFrom = 0;
+      driveFrom = 0; // same courthouse
     } else {
       var dmPrev = tcGetDriveOffice(prevLoc);
       var dmThis = tcGetDriveOffice(s.loc);
@@ -3249,7 +3276,7 @@ function tcRender() {
     }
 
     var fee = isLead ? tcRecFee(s.loc, s.type) : recFee('', s.type);
-    if (isLead) { totalMiles += m; totalDrivMin += driveFrom; leadCourts[s.loc] = true; }
+    if (isLead) { if (!thisIsZoom) totalMiles += m; totalDrivMin += driveFrom; leadCourts[s.loc] = true; }
     totalFee += fee;
     // Use average court time (midpoint of 30-45) for totals
     totalCourtMin += Math.round((COURT_MIN_LOW + COURT_MIN_HIGH) / 2);
@@ -3336,6 +3363,7 @@ function tcRender() {
   stopData.forEach(function(sd) {
     var s = sd.s;
     var shortLoc = (function(){
+      if (isZoom(s.type)) return '📹 Zoom / Remote Hearing';
       var row = AL_COUNTIES.find(function(r){ return r[4]===s.loc||r[0]===s.loc; });
       if (row) {
         var tzNote = row[5]==='EST' ? ' <span style="color:#e8a838;font-size:9px">⚠ EST</span>' : '';
@@ -3636,19 +3664,20 @@ var AL_COUNTIES = [
 },
   {id:181,date:'2026-05-05',time:'09:00',hearing_num:'932929',style:'Bank of America v. Donald Winchester',setting:'Bench Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
   {id:182,date:'2026-05-05',time:'09:00',hearing_num:'932933',style:'LVNV Funding v. Terry Manning',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Completed',fee:235,non_fee:null},
-  {id:183,date:'2026-05-05',time:'09:30',hearing_num:'901414',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:184,date:'2026-05-06',time:'09:00',hearing_num:'920946',style:'Republic Finance LLC v. Chiquera M Cox',setting:'Hearing',location:'ETOWAH COUNTY - GADSDEN',client_ref:'',result:'Cancelled',fee:0,non_fee:125},
   {id:185,date:'2026-05-11',time:'10:00',hearing_num:'935839',style:'1st Franklin Financial Corp. v. Cherlyn McVay',setting:'Bench Trial',location:'TUSCALOOSA COUNTY - TUSCALOOSA',client_ref:'',result:'Accepted',fee:225,non_fee:null},
   {id:186,date:'2026-05-14',time:'09:00',hearing_num:'936203',style:'Capital One, N.A. v. Charles R. Huckabee',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'',result:'Accepted',fee:225,non_fee:null},
-  {id:187,date:'2026-05-27',time:'10:00',hearing_num:'919879',style:'Lendmark Financial Services LLC v. John Moffett',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:125,non_fee:null},
-  {id:188,date:'2026-06-04',time:'09:30',hearing_num:'901918',style:'Citibank v. Nancy G Hayden',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:100,non_fee:null},
   {id:189,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v Kelly Caldwell',setting:'Trial',location:'',client_ref:'',result:'Accepted',fee:225,non_fee:null},
   {id:190,date:'2026-05-04',time:'09:00',hearing_num:'936879',style:'American Express v. Matthew Dodson aka Matthew J Dodson',setting:'Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
   {id:191,date:'2026-05-04',time:'09:00',hearing_num:'936871',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
-  {id:192,date:'2026-05-07',time:'13:30',hearing_num:'936863',style:'Cavalry SPV I v. Jennifer Dobbins',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Accepted',fee:165,non_fee:null},
+  {id:192,date:'2026-05-07',time:'13:30',hearing_num:'936863',style:'Cavalry SPV I v. Jennifer Dobbins',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:165,non_fee:null},
   {id:193,date:'2026-05-13',time:'10:00',hearing_num:'938629',style:'Citibank N.A v. Davin Moore',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:165,non_fee:null},
   {id:194,date:'2026-05-19',time:'10:00',hearing_num:'938022',style:'Jefferson Capital Systems v. Melanie Authement',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:195,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:115,non_fee:null}
+  {id:195,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:115,non_fee:null},
+  {id:196,date:'2026-05-12',time:'09:00',hearing_num:'938063',style:'Capital One, N.A., Merger to Discover Bank v Jose Rivera',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
+  {id:197,date:'2026-05-18',time:'09:00',hearing_num:'940503',style:'LVNV Funding, LLC v Barbara Shea',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
+  {id:198,date:'2026-05-26',time:'11:00',hearing_num:'939985',style:'CITIBANK, N.A. vs Glenn Kunis',setting:'Zoom',location:'DALE COUNTY - OZARK',client_ref:'',result:'Accepted',fee:100,non_fee:null},
+  {id:199,date:'2026-05-27',time:'09:00',hearing_num:'939417',style:'AMEX vs Charles Hyde',setting:'Zoom',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:100,non_fee:null}
 ];
 
 function renderCounties() {

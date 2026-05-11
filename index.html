@@ -238,6 +238,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   <div class="tab" onclick="go('tripcalc')">🗺 Trip Calc</div>
   <div class="tab" onclick="go('counties')">🏛 AL Counties</div>
   <div class="tab" onclick="go('reprice')">🔄 Repricing</div>
+  <div class="tab" onclick="go('catchup')">📈 Rate Catch-Up</div>
 </div>
 
 <div class="main">
@@ -877,6 +878,84 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   </div>
   <div id="rp-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
   <div id="rp-body"></div>
+</div>
+
+
+<!-- ══ RATE CATCH-UP PLANNER ══ -->
+<div class="panel" id="panel-catchup">
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">📈 Rate Catch-Up Planner</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+      These are past hearings where you were paid below the recommended rate.
+      The planner shows a <strong>gradual increase schedule</strong> — raising rates slowly
+      over time avoids pricing yourself out of assignments while still closing the gap.
+      Use the slider to set your target pace.
+    </div>
+
+    <!-- Controls -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">RATE INCREASE PACE</div>
+        <select class="fs" id="cu-pace" onchange="renderCatchUp()" style="font-size:12px">
+          <option value="conservative">Conservative — $5–10/hearing every 2 months</option>
+          <option value="moderate" selected>Moderate — $10–25/hearing monthly</option>
+          <option value="aggressive">Aggressive — $25–50/hearing, close gap fast</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">FILTER BY CREDITOR / COUNTY</div>
+        <input class="fi" type="text" id="cu-q" placeholder="Search..." oninput="renderCatchUp()" style="font-size:12px">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">MIN GAP TO SHOW</div>
+        <select class="fs" id="cu-mingap" onchange="renderCatchUp()" style="font-size:12px">
+          <option value="0">All gaps</option>
+          <option value="25">$25+ gap</option>
+          <option value="50" selected>$50+ gap</option>
+          <option value="75">$75+ gap</option>
+          <option value="100">$100+ gap</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">&nbsp;</div>
+        <button class="btn ghost" onclick="renderCatchUp()" style="font-size:12px">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI summary -->
+  <div id="cu-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px"></div>
+
+  <!-- Strategy explanation -->
+  <div id="cu-strategy" style="margin-bottom:14px"></div>
+
+  <!-- Catch-up table -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:10px">📋 Underpriced Hearing Detail</div>
+    <div class="tw">
+      <table style="font-size:12px;width:100%">
+        <thead><tr>
+          <th style="text-align:left">DATE</th>
+          <th style="text-align:left">CASE</th>
+          <th>TYPE</th>
+          <th>COUNTY</th>
+          <th style="color:#e74c3c">CHARGED</th>
+          <th style="color:var(--green)">REC. RATE</th>
+          <th style="color:#e8a838">GAP</th>
+          <th>% OF REC</th>
+          <th style="color:var(--blue)">NEXT TARGET</th>
+          <th>STEP</th>
+        </tr></thead>
+        <tbody id="cu-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">💡 Strategy Notes</div>
+    <div id="cu-notes" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
+  </div>
 </div>
 
 </div><!-- /main -->
@@ -2816,7 +2895,7 @@ function qqUpdate() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════════════════════════════════════════
-const TAB_ORDER = ['dash','hearings','fairrate','bundles','clients','calendar','time','rates','add','import','tripcalc','counties','reprice'];
+const TAB_ORDER = ['dash','hearings','fairrate','bundles','clients','calendar','time','rates','add','import','tripcalc','counties','reprice','catchup'];
 
 function go(name){
   TAB_ORDER.forEach((t,i)=>{
@@ -2837,6 +2916,7 @@ function go(name){
   if(name==='tripcalc') renderTripCalc();
   if(name==='counties') renderCounties();
   if(name==='reprice')  renderReprice();
+  if(name==='catchup')  renderCatchUp();
 }
 
 
@@ -4012,6 +4092,145 @@ function rpCard(ra, type) {
     + '</div>';
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RATE CATCH-UP PLANNER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderCatchUp() {
+  var pace    = ($('cu-pace')   ||{value:'moderate'}).value;
+  var q       = ($('cu-q')     ||{value:''}).value.toLowerCase();
+  var minGap  = parseInt(($('cu-mingap')||{value:'50'}).value) || 0;
+
+  // Pace settings: [stepSize (per occurrence), label]
+  var paceMap = {
+    conservative: { step: 10, label: '$5–10 per hearing, every 2 months',
+                    desc: 'Safest — Nationwide will barely notice. Takes longer but protects your assignment volume.' },
+    moderate:     { step: 20, label: '$10–25 per hearing, monthly',
+                    desc: 'Balanced — raise rates on recurring creditors first, then spread to others. ~6–12 months to close most gaps.' },
+    aggressive:   { step: 40, label: '$25–50 per hearing, close gap fast',
+                    desc: 'Faster recovery — acceptable if your assignment volume is stable. Some creditors may reassign.' },
+  };
+  var cfg = paceMap[pace] || paceMap.moderate;
+
+  // Build underpriced list from completed hearings
+  var under = [];
+  H.forEach(function(h) {
+    if (h.result !== 'Completed') return;
+    if (!h.fee || h.fee <= 0) return;
+    var rec = recFee(h.location, h.setting);
+    var gap = rec - h.fee;
+    if (gap < minGap) return; // below min gap filter
+    if (h.fee >= rec * 0.85) return; // within 15% = acceptable
+    // Search filter
+    if (q) {
+      var searchStr = ((h.style||'') + '|' + (h.location||'') + '|' + (h.hearing_num||'')).toLowerCase();
+      if (searchStr.indexOf(q) < 0) return;
+    }
+    // How many steps to reach rec rate
+    var steps = Math.ceil(gap / cfg.step);
+    var nextTarget = Math.min(h.fee + cfg.step, rec);
+    var pct = Math.round(h.fee / rec * 100);
+    var shortLoc = (h.location||'').split(' - ').pop() || '—';
+    // Creditor name (before v.)
+    var s = h.style || '';
+    var vIdx = s.indexOf(' v. '); if(vIdx<0) vIdx = s.indexOf(' vs. ');
+    var creditor = vIdx >= 0 ? s.substring(0, vIdx).trim() : s;
+    var defendant = vIdx >= 0 ? s.substring(vIdx+5).trim() : '';
+    under.push({
+      id:h.id, date:h.date, num:h.hearing_num,
+      style:h.style, creditor:creditor, defendant:defendant,
+      setting:h.setting, loc:shortLoc, location:h.location,
+      fee:h.fee, rec:rec, gap:gap, pct:pct,
+      steps:steps, nextTarget:nextTarget,
+    });
+  });
+
+  // Sort by gap descending (biggest opportunity first)
+  under.sort(function(a,b){ return b.gap - a.gap; });
+
+  var totalGap    = under.reduce(function(s,h){return s+h.gap;},0);
+  var avgPct      = under.length ? Math.round(under.reduce(function(s,h){return s+h.pct;},0)/under.length) : 0;
+  var avgGap      = under.length ? Math.round(totalGap/under.length) : 0;
+  var stepsToFull = under.length ? Math.max.apply(null, under.map(function(h){return h.steps;})) : 0;
+
+  // KPI cards
+  $('cu-kpi').innerHTML = [
+    { l:'Underpriced Hearings', v:under.length,        s:'Below 85% of rec. rate' },
+    { l:'Total Gap',            v:fmt(totalGap),        s:'Revenue left on table' },
+    { l:'Avg % of Rec. Rate',   v:avgPct+'%',           s:'Avg '+fmt(avgGap)+' below rec.' },
+    { l:'Steps to Full Rate',   v:stepsToFull,          s:'At '+cfg.label },
+  ].map(function(k){
+    return '<div class="stat"><div class="stat-lbl">'+k.l+'</div>'
+      +'<div class="stat-val" style="font-size:22px">'+k.v+'</div>'
+      +'<div class="stat-sub">'+k.s+'</div></div>';
+  }).join('');
+
+  // Strategy card
+  // Group by creditor to show which ones appear most
+  var credGroups = {};
+  under.forEach(function(h){
+    if (!credGroups[h.creditor]) credGroups[h.creditor] = {count:0, gap:0, avgPct:0, pcts:[]};
+    credGroups[h.creditor].count++;
+    credGroups[h.creditor].gap += h.gap;
+    credGroups[h.creditor].pcts.push(h.pct);
+  });
+  var topCreds = Object.keys(credGroups).sort(function(a,b){
+    return credGroups[b].gap - credGroups[a].gap;
+  }).slice(0,5);
+
+  var stratHtml = '<div style="background:rgba(55,138,221,.05);border:1px solid rgba(55,138,221,.2);border-radius:10px;padding:14px 16px;margin-bottom:4px">'
+    + '<div style="font-weight:600;color:var(--blue);margin-bottom:8px;font-size:13px">📊 Catch-Up Strategy — ' + cfg.label + '</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">' + cfg.desc + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><strong style="color:var(--text)">Start with these creditors</strong> — highest gap, appear most often:</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:8px">'
+    + topCreds.map(function(cred) {
+        var g = credGroups[cred];
+        var avgPctC = Math.round(g.pcts.reduce(function(a,b){return a+b;},0)/g.pcts.length);
+        return '<div style="background:var(--s1);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;font-size:11px">'
+          + '<div style="font-weight:600;color:var(--text)">' + cred.substring(0,30) + '</div>'
+          + '<div style="color:var(--muted)">' + g.count + ' hearings &nbsp;|&nbsp; '
+          + fmt(g.gap) + ' gap &nbsp;|&nbsp; avg ' + avgPctC + '% of rec.</div>'
+          + '</div>';
+      }).join('')
+    + '</div>'
+    + '</div>';
+  $('cu-strategy').innerHTML = stratHtml;
+
+  // Table rows
+  $('cu-tbody').innerHTML = under.length ? under.map(function(h) {
+    var pctClr = h.pct < 40 ? '#e74c3c' : h.pct < 60 ? '#e8a838' : h.pct < 80 ? 'var(--accent)' : 'var(--muted)';
+    var gapClr = h.gap >= 100 ? '#e74c3c' : h.gap >= 50 ? '#e8a838' : 'var(--muted)';
+    var pctBar = '<div style="width:'+Math.min(h.pct,100)+'%;height:4px;background:'
+      +(h.pct<50?'#e74c3c':h.pct<75?'#e8a838':'var(--green)')+';border-radius:2px;margin-top:3px"></div>';
+    return '<tr>'
+      + '<td class="mono" style="font-size:11px;color:var(--muted)">'+h.date+'</td>'
+      + '<td style="font-size:11px;max-width:180px">'
+        + '<div style="font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+h.defendant+'</div>'
+        + '<div style="font-size:10px;color:var(--muted)">'+h.creditor.substring(0,30)+'</div>'
+      + '</td>'
+      + '<td style="font-size:10px;color:var(--muted)">'+h.setting+'</td>'
+      + '<td style="font-size:11px;color:var(--muted)">'+h.loc+'</td>'
+      + '<td class="mono" style="color:#e74c3c;font-weight:600">'+fmt(h.fee)+'</td>'
+      + '<td class="mono" style="color:var(--green);font-weight:500">'+fmt(h.rec)+'</td>'
+      + '<td class="mono" style="color:'+gapClr+';font-weight:600">+'+fmt(h.gap)+'</td>'
+      + '<td style="min-width:60px"><div style="font-size:11px;color:'+pctClr+'">'+h.pct+'%</div>'+pctBar+'</td>'
+      + '<td class="mono" style="color:var(--blue);font-weight:600">'+fmt(h.nextTarget)+'</td>'
+      + '<td style="font-size:10px;color:var(--muted)">'+h.steps+' step'+(h.steps!==1?'s':'')+'</td>'
+      + '</tr>';
+  }).join('')
+  : '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">No hearings match the current filters.</td></tr>';
+
+  // Notes
+  $('cu-notes').innerHTML = [
+    '📌 <strong>Strategy:</strong> Focus on creditors you see repeatedly. A $10–25 increase on a creditor you appear for 10x/year adds $100–250 without triggering a reassignment.',
+    '⚠️ <strong>Caution:</strong> Raising rates too fast on a single creditor can cause Nationwide to reassign you. Spread increases across creditors and space them 4–8 weeks apart.',
+    '✅ <strong>Priority order:</strong> (1) Largest gap first, (2) Creditors you see most often, (3) Distant counties where mileage cost is highest relative to what you charged.',
+    '📋 <strong>Next Target</strong> shows what to charge on your <em>next</em> hearing with this creditor at this courthouse — not what to bill retroactively.',
+    '🎯 <strong>Goal:</strong> Reach at least 85% of the recommended rate on all creditors within 12 months. You don\'t need to hit 100% — the recommended rate is a minimum floor, not a ceiling.',
+  ].map(function(n){ return '<div style="margin-bottom:8px">'+n+'</div>'; }).join('');
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BOOT

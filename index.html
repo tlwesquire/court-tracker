@@ -1422,10 +1422,10 @@ let H = [
   {id:209,date:'2026-06-04',time:'13:30',hearing_num:'944249',style:'LVNV FUNDING LLC V DOUGLAS JONES',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'1122759',result:'Completed',fee:100,non_fee:null},
   {id:210,date:'2026-06-04',time:'13:30',hearing_num:'944489',style:'1st Franklin Financial v. Shenitha Christian',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'280231',result:'Completed',fee:125,non_fee:null},
   {id:211,date:'2026-06-04',time:'13:30',hearing_num:'946466',style:'American Express National Bank (1008) vs Kegan Pritchett',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'11-SM-2026-901245.00',result:'Completed',fee:125,non_fee:null},
-  {id:212,date:'2026-06-09',time:'08:20',hearing_num:'949315',style:'First National Bank of Omaha v. Daniel G Harris',setting:'In-Person',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'ALV-1130953487',result:'Accepted',fee:125,non_fee:null},
-  {id:213,date:'2026-06-09',time:'09:00',hearing_num:'944514',style:'Crown Asset Management v. Megan Davis',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'238429',result:'Accepted',fee:125,non_fee:null},
-  {id:214,date:'2026-06-09',time:'09:00',hearing_num:'943968',style:'SYNCHRONY BANK, VS. DEBORAH CUZZORT',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'1124191',result:'Accepted',fee:235,non_fee:null},
-  {id:215,date:'2026-06-09',time:'10:00',hearing_num:'948874',style:'AMERICAN EXPRESS NATIONAL BANK V. MATTHEW HABEL',setting:'Hearing',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'5197522',result:'Accepted',fee:125,non_fee:null},
+  {id:212,date:'2026-06-09',time:'08:20',hearing_num:'949315',style:'First National Bank of Omaha v. Daniel G Harris',setting:'In-Person',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'ALV-1130953487',result:'Completed',fee:125,non_fee:null},
+  {id:213,date:'2026-06-09',time:'09:00',hearing_num:'944514',style:'Crown Asset Management v. Megan Davis',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'238429',result:'Completed',fee:125,non_fee:null},
+  {id:214,date:'2026-06-09',time:'09:00',hearing_num:'943968',style:'SYNCHRONY BANK, VS. DEBORAH CUZZORT',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'1124191',result:'Completed',fee:235,non_fee:null},
+  {id:215,date:'2026-06-09',time:'10:00',hearing_num:'948874',style:'AMERICAN EXPRESS NATIONAL BANK V. MATTHEW HABEL',setting:'Hearing',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'5197522',result:'Completed',fee:125,non_fee:null},
   {id:216,date:'2026-06-10',time:'10:00',hearing_num:'941706',style:'Avadian Credit Union Alabama Telco VS. Quintin Jerard Moss',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'278028',result:'Accepted',fee:150,non_fee:null},
   {id:217,date:'2026-06-10',time:'10:00',hearing_num:'945044',style:'Bank of America, NA vs Marie Powell',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'922872',result:'Accepted',fee:100,non_fee:null},
   {id:218,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware v. Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'5195098',result:'Accepted',fee:150,non_fee:null},
@@ -1434,9 +1434,12 @@ let H = [
   {id:221,date:'2026-06-24',time:'10:00',hearing_num:'946904',style:'VELOCITY INVESTMENTS, LLC V. ROBIN BACHTEL',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'280078',result:'Accepted',fee:150,non_fee:null},
   {id:222,date:'2026-06-25',time:'09:00',hearing_num:'946926',style:'CAPITAL ONE, MERGER TO DISCOVER BANK V. JENNIFER CO',setting:'MSJ',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'203311',result:'Accepted',fee:150,non_fee:null},
   {id:223,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'5195027',result:'Accepted',fee:115,non_fee:null},
-  {id:224,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v. Kelly Caldwell',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'5196268',result:'Accepted',fee:225,non_fee:null}
+  {id:224,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v. Kelly Caldwell',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'5196268',result:'Accepted',fee:225,non_fee:null},
+  {id:225,date:'2026-06-08',time:'09:00',hearing_num:'949040',style:'LVNV Funding LLC v. Robert Stanton',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Cancelled',fee:0,non_fee:75},
+  {id:226,date:'2026-06-08',time:'13:30',hearing_num:'949055',style:'LVNV FUNDING, LLC V. ROBERT STANTON',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'828188',result:'Completed',fee:175,non_fee:null},
+  {id:227,date:'2026-06-08',time:'13:30',hearing_num:'949061',style:'Capital One N.A. v. Johnny Lipham',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'1104285',result:'Completed',fee:100,non_fee:null}
 ];
-let nextId = 225;
+let nextId = 228;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -1832,10 +1835,10 @@ function renderDash() {
       var shortLoc = (h.location||'').replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
       var defName = (function(){
         var s = h.style||'';
-        var vs = s.indexOf(' v. ');
-        if(vs<0) vs = s.indexOf(' vs. ');
-        if(vs<0) vs = s.indexOf(' V. ');
-        return vs>=0 ? s.substring(vs+5).trim() : s;
+        var vs = s.indexOf(' v. '); var vl = 4;
+        if(vs<0) { vs = s.indexOf(' vs. '); vl = 5; }
+        if(vs<0) { vs = s.indexOf(' V. ');  vl = 4; }
+        return vs>=0 ? s.substring(vs+vl).trim() : s;
       })();
       var statusColor = h.result==='Completed'?'var(--green)':h.result==='Accepted'?'var(--blue)':'var(--muted)';
       return '<div style="padding:8px 0;border-bottom:.5px solid var(--bd);display:flex;gap:10px;align-items:flex-start">'
@@ -4117,8 +4120,8 @@ function buildRepriceData() {
     if (hasBundleIssue) {
       var cancelledNames = cancelledPartners.map(function(x){
         var s = x.style||'';
-        var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
-        return vs>=0 ? s.substring(vs+5).trim() : s;
+        var vs = s.indexOf(' v. '); var vl2=4; if(vs<0){vs=s.indexOf(' vs. ');vl2=5;}
+        return vs>=0 ? s.substring(vs+vl2).trim() : s;
       }).join(', ');
       bundleImpacted.push({
         id:h.id, style:h.style, date:h.date, location:h.location,
@@ -4224,8 +4227,8 @@ function renderReprice() {
 function rpCard(ra, type) {
   var shortLoc = ra.location ? ra.location.replace(/ COUNTY/,'').split(' - ').reverse().join(' – ') : 'Unknown';
   var s = ra.style||'';
-  var vs = s.indexOf(' v. '); if(vs<0) vs=s.indexOf(' vs. ');
-  var defName  = vs>=0 ? s.substring(vs+5).trim() : s;
+  var vs = s.indexOf(' v. '); var vlen3 = 4; if(vs<0) { vs=s.indexOf(' vs. '); vlen3=5; }
+  var defName  = vs>=0 ? s.substring(vs+vlen3).trim() : s;
   var creditor = vs>=0 ? s.substring(0,vs).trim() : '';
   var isBundle = type === 'bundle';
   var borderClr = isBundle ? 'rgba(232,168,56,.35)' : 'rgba(231,76,60,.25)';
@@ -4317,9 +4320,9 @@ function renderCatchUp() {
     var shortLoc = (h.location||'').split(' - ').pop() || '—';
     // Creditor name (before v.)
     var s = h.style || '';
-    var vIdx = s.indexOf(' v. '); if(vIdx<0) vIdx = s.indexOf(' vs. ');
+    var vIdx = s.indexOf(' v. '); var vlen4 = 4; if(vIdx<0) { vIdx = s.indexOf(' vs. '); vlen4=5; }
     var creditor = vIdx >= 0 ? s.substring(0, vIdx).trim() : s;
-    var defendant = vIdx >= 0 ? s.substring(vIdx+5).trim() : '';
+    var defendant = vIdx >= 0 ? s.substring(vIdx+vlen4).trim() : '';
     under.push({
       id:h.id, date:h.date, num:h.hearing_num,
       style:h.style, creditor:creditor, defendant:defendant,

@@ -239,6 +239,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   <div class="tab" onclick="go('counties')">🏛 AL Counties</div>
   <div class="tab" onclick="go('reprice')">🔄 Repricing</div>
   <div class="tab" onclick="go('catchup')">📈 Rate Catch-Up</div>
+  <div class="tab" onclick="go('pricing')">💵 Hearing Pricing</div>
 </div>
 
 <div class="main">
@@ -957,6 +958,142 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
     <div id="cu-notes" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HEARING PRICING PANEL
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-pricing">
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">💵 Hearing Pricing Calculator</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
+      Enter your assumptions below. The calculator shows the <strong style="color:var(--accent)">true cost</strong> of each
+      courthouse trip — mileage (IRS rate), drive time, and appearance time — then derives a fee that
+      covers your costs <em>plus</em> a profit margin. Adjust the sliders until the number feels right.
+    </div>
+
+    <!-- ── INPUT GRID ── -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px" id="pricing-inputs-grid">
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">HOURLY VALUE ($/HR)</div>
+        <input type="number" id="pi-hrval" value="150" min="50" max="600" step="25"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:15px;text-align:right"
+          oninput="renderPricing()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">What your time is worth per hour</div>
+      </div>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">APPEARANCE TIME (MIN)</div>
+        <input type="number" id="pi-appear" value="45" min="15" max="120" step="15"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:15px;text-align:right"
+          oninput="renderPricing()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Time in court per hearing</div>
+      </div>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">PROFIT MARGIN (%)</div>
+        <input type="number" id="pi-margin" value="30" min="0" max="200" step="5"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:15px;text-align:right"
+          oninput="renderPricing()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">% above break-even to charge</div>
+      </div>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">START LOCATION</div>
+        <select id="pi-origin" onchange="renderPricing()"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:13px">
+          <option value="office">Office — 311A 1st Ave E, Oneonta</option>
+          <option value="home">Home — Remlap (add ~5 mi / 8 min)</option>
+        </select>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Early hearings may start from home</div>
+      </div>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">HEARING TYPE</div>
+        <select id="pi-type" onchange="renderPricing()"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:13px">
+          <option value="Hearing">Hearing (30 min)</option>
+          <option value="Trial">Trial / Bench Trial (45 min)</option>
+          <option value="In-Person">In-Person (30 min)</option>
+          <option value="Status Conf">Status / Scheduling (20 min)</option>
+          <option value="Dismissal">Dismissal (15 min)</option>
+          <option value="Zoom">Zoom — flat rate</option>
+        </select>
+      </div>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px">IRS MILEAGE RATE</div>
+        <input type="number" id="pi-irs" value="0.725" min="0.50" max="1.00" step="0.005"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:15px;text-align:right"
+          oninput="renderPricing()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">2026 rate: $0.725/mi</div>
+      </div>
+
+    </div><!-- /input grid -->
+
+    <!-- ── COST BREAKDOWN SUMMARY CARDS ── -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="pricing-summary-cards"></div>
+
+  </div><!-- /card -->
+
+  <!-- ── PER-COUNTY TABLE ── -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin-bottom:0">📍 Price by Courthouse</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="pricing-search" placeholder="Filter county…"
+          oninput="renderPricing()"
+          style="width:180px;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif">
+        <select id="pricing-sort" onchange="renderPricing()"
+          style="background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif">
+          <option value="dist">Sort: Distance</option>
+          <option value="profit">Sort: Profit $</option>
+          <option value="breakeven">Sort: Break-Even</option>
+          <option value="alpha">Sort: A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:'IBM Plex Mono',monospace">
+      MILEAGE COST = RT miles × IRS rate &nbsp;|&nbsp;
+      TIME COST = (drive RT + appearance) ÷ 60 × hourly value &nbsp;|&nbsp;
+      BREAK-EVEN = mileage + time &nbsp;|&nbsp;
+      SUGGESTED PRICE = break-even × (1 + margin%) rounded to $25 &nbsp;|&nbsp;
+      Home start adds ~5 mi / 8 min
+    </div>
+
+    <div class="tw" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:880px">
+        <thead>
+          <tr>
+            <th style="text-align:left;min-width:160px" onclick="document.getElementById('pricing-sort').value='alpha';renderPricing()">COURTHOUSE</th>
+            <th onclick="document.getElementById('pricing-sort').value='dist';renderPricing()">OW / RT<br><span style="font-weight:400;font-size:9px">MILES</span></th>
+            <th>DRIVE RT<br><span style="font-weight:400;font-size:9px">TIME</span></th>
+            <th>MILEAGE<br><span style="font-weight:400;font-size:9px">COST</span></th>
+            <th>TIME<br><span style="font-weight:400;font-size:9px">COST</span></th>
+            <th onclick="document.getElementById('pricing-sort').value='breakeven';renderPricing()" style="color:var(--red)">BREAK-EVEN<br><span style="font-weight:400;font-size:9px">MUST EARN</span></th>
+            <th style="color:var(--accent)">+PROFIT<br><span style="font-weight:400;font-size:9px">MARGIN $</span></th>
+            <th onclick="document.getElementById('pricing-sort').value='profit';renderPricing()" style="color:var(--green)">SUGGESTED<br><span style="font-weight:400;font-size:9px">PRICE</span></th>
+            <th>CURRENT<br><span style="font-weight:400;font-size:9px">REC MIN</span></th>
+            <th>AVG<br><span style="font-weight:400;font-size:9px">CHARGED</span></th>
+            <th>VS BREAK-EVEN<br><span style="font-weight:400;font-size:9px">AVG PROFIT</span></th>
+          </tr>
+        </thead>
+        <tbody id="pricing-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- ── LEGEND ── -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:10px;padding:8px 4px">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle"></span>Avg charged ≥ suggested price</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle"></span>Avg charged between break-even and suggested</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:4px;vertical-align:middle"></span>Avg charged below break-even (losing money)</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);margin-right:4px;vertical-align:middle"></span>No completed hearings yet</span>
+    </div>
+  </div><!-- /card -->
+
+</div><!-- /panel-pricing -->
 
 </div><!-- /main -->
 
@@ -2961,6 +3098,7 @@ function go(name){
   if(name==='counties') renderCounties();
   if(name==='reprice')  renderReprice();
   if(name==='catchup')  renderCatchUp();
+  if(name==='pricing')  renderPricing();
 }
 
 
@@ -4274,6 +4412,181 @@ function renderCatchUp() {
     '📋 <strong>Next Target</strong> shows what to charge on your <em>next</em> hearing with this creditor at this courthouse — not what to bill retroactively.',
     '🎯 <strong>Goal:</strong> Reach at least 85% of the recommended rate on all creditors within 12 months. You don\'t need to hit 100% — the recommended rate is a minimum floor, not a ceiling.',
   ].map(function(n){ return '<div style="margin-bottom:8px">'+n+'</div>'; }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HEARING PRICING CALCULATOR
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderPricing() {
+  // ── Read inputs ─────────────────────────────────────────────────────────────
+  const hrVal    = parseFloat(document.getElementById('pi-hrval').value)  || 150;
+  const appearM  = parseFloat(document.getElementById('pi-appear').value) || 45;
+  const margin   = parseFloat(document.getElementById('pi-margin').value) || 30;
+  const irsRate  = parseFloat(document.getElementById('pi-irs').value)    || MR;
+  const origin   = document.getElementById('pi-origin').value;          // 'office' | 'home'
+  const htype    = document.getElementById('pi-type').value;
+  const q        = (document.getElementById('pricing-search').value || '').toLowerCase();
+  const sortBy   = document.getElementById('pricing-sort').value;
+
+  // Home adds ~5 mi / 8 min each way
+  const homeExtraMi  = origin === 'home' ? 5  : 0;
+  const homeExtraMin = origin === 'home' ? 8  : 0;
+
+  // Determine court time from type selector (overrides COURT_TIME_MIN for this calc)
+  const courtMin = htype === 'Zoom' ? 35
+    : htype === 'Trial'       ? 45
+    : htype === 'Status Conf' ? 20
+    : htype === 'Dismissal'   ? 15
+    : appearM;  // user input for Hearing / In-Person
+
+  // ── Build historical stats per location ─────────────────────────────────────
+  const histFees = {}, histCnt = {};
+  H.forEach(h => {
+    if (h.result === 'Completed' && h.fee > 0 && h.location) {
+      histFees[h.location] = (histFees[h.location] || 0) + h.fee;
+      histCnt[h.location]  = (histCnt[h.location]  || 0) + 1;
+    }
+  });
+
+  // ── Per-county calc ─────────────────────────────────────────────────────────
+  var rows = Object.keys(DIST)
+    .filter(loc => !q || loc.toLowerCase().includes(q))
+    .map(loc => {
+      const baseMi   = DIST[loc] || 0;
+      const baseDrMin = getDriveMin(loc) || Math.round(baseMi * 60 / 55);
+
+      const owMi     = baseMi  + homeExtraMi;
+      const rtMi     = owMi * 2;
+      const drRTmin  = (baseDrMin + homeExtraMin) * 2;
+
+      // Zoom: flat rate, no drive
+      if (htype === 'Zoom') {
+        const suggested = 100;
+        const recMin    = 100;
+        const avgFee    = histCnt[loc] ? Math.round(histFees[loc] / histCnt[loc]) : null;
+        return { loc, owMi:0, rtMi:0, drRTmin:0, mileageCost:0, timeCost:0, breakEven:0,
+                 profitAdd:0, suggested, recMin, avgFee, histCnt:histCnt[loc]||0 };
+      }
+
+      const totalMin   = drRTmin + courtMin;   // drive RT + time in court
+      const mileageCost = +(rtMi  * irsRate).toFixed(2);
+      const timeCost    = +((totalMin / 60) * hrVal).toFixed(2);
+      const breakEven   = +(mileageCost + timeCost).toFixed(2);
+      const profitAdd   = +(breakEven * margin / 100).toFixed(2);
+      const rawSugg     = breakEven + profitAdd;
+      const suggested   = Math.ceil(rawSugg / 25) * 25;
+
+      const isTrial = htype === 'Trial';
+      const recMin  = recFee(loc, htype);
+      const avgFee  = histCnt[loc] ? Math.round(histFees[loc] / histCnt[loc]) : null;
+
+      return { loc, owMi, rtMi, drRTmin, mileageCost, timeCost, breakEven,
+               profitAdd, suggested, recMin, avgFee, histCnt:histCnt[loc]||0 };
+    });
+
+  // ── Sort ────────────────────────────────────────────────────────────────────
+  if      (sortBy === 'dist')      rows.sort((a,b) => a.owMi - b.owMi);
+  else if (sortBy === 'profit')    rows.sort((a,b) => b.suggested - a.suggested);
+  else if (sortBy === 'breakeven') rows.sort((a,b) => b.breakEven - a.breakEven);
+  else                             rows.sort((a,b) => a.loc.localeCompare(b.loc));
+
+  // ── Summary cards ───────────────────────────────────────────────────────────
+  const activeLocs = rows.filter(r => r.owMi > 0);
+  const avgBreak   = activeLocs.length ? Math.round(activeLocs.reduce((s,r) => s + r.breakEven, 0) / activeLocs.length) : 0;
+  const avgSugg    = activeLocs.length ? Math.round(activeLocs.reduce((s,r) => s + r.suggested, 0) / activeLocs.length) : 0;
+  const losingLocs = rows.filter(r => r.avgFee !== null && r.avgFee < r.breakEven).length;
+  const profitLocs = rows.filter(r => r.avgFee !== null && r.avgFee >= r.suggested).length;
+
+  document.getElementById('pricing-summary-cards').innerHTML = `
+    <div class="stat" style="border-top:3px solid var(--red)">
+      <div class="stat-lbl">Avg Break-Even</div>
+      <div class="stat-val">$${avgBreak}</div>
+      <div class="stat-sub">Across ${activeLocs.length} courthouses</div>
+    </div>
+    <div class="stat" style="border-top:3px solid var(--green)">
+      <div class="stat-lbl">Avg Suggested Price</div>
+      <div class="stat-val">$${avgSugg}</div>
+      <div class="stat-sub">${margin}% margin over break-even</div>
+    </div>
+    <div class="stat" style="border-top:3px solid var(--red)">
+      <div class="stat-lbl">Below Break-Even</div>
+      <div class="stat-val">${losingLocs}</div>
+      <div class="stat-sub">Counties where avg charge loses money</div>
+    </div>
+    <div class="stat" style="border-top:3px solid var(--green)">
+      <div class="stat-lbl">At Suggested Price</div>
+      <div class="stat-val">${profitLocs}</div>
+      <div class="stat-sub">Counties hitting the profit target</div>
+    </div>
+  `;
+
+  // ── Table rows ───────────────────────────────────────────────────────────────
+  const tbody = document.getElementById('pricing-tbody');
+  tbody.innerHTML = rows.map(r => {
+    const {loc, owMi, rtMi, drRTmin, mileageCost, timeCost, breakEven,
+           profitAdd, suggested, recMin, avgFee, histCnt: cnt} = r;
+
+    // Colour coding for avg fee
+    let dotClr, rowStyle = '';
+    if (cnt === 0) {
+      dotClr = 'var(--muted)';
+    } else if (avgFee >= suggested) {
+      dotClr = 'var(--green)';
+    } else if (avgFee >= breakEven) {
+      dotClr = 'var(--accent)';
+    } else {
+      dotClr = 'var(--red)';
+      rowStyle = 'background:rgba(231,76,60,.04)';
+    }
+
+    const vsBreak = avgFee !== null ? avgFee - breakEven : null;
+    const vsBreakStr  = vsBreak !== null
+      ? `<span style="color:${vsBreak >= 0 ? 'var(--green)' : 'var(--red)'}">
+           ${vsBreak >= 0 ? '+' : ''}$${Math.abs(vsBreak).toFixed(0)}
+         </span>`
+      : '<span style="color:var(--muted)">—</span>';
+
+    const locLabel = loc.replace(' COUNTY - ', ' — ').replace(/ COUNTY$/, '');
+
+    // Gap between suggested and current rec min
+    const suggVsRec = suggested - recMin;
+    const suggVsRecStr = `<span style="font-size:10px;color:${suggVsRec > 0 ? 'var(--accent)' : 'var(--muted)'}">
+      ${suggVsRec > 0 ? '+$'+suggVsRec : 'same'}
+    </span>`;
+
+    // Is this a zoom?
+    if (htype === 'Zoom') {
+      return `<tr style="${rowStyle}">
+        <td style="font-weight:500;color:var(--text)">${locLabel}</td>
+        <td class="mono" colspan="4" style="color:var(--muted);font-size:11px">Remote — no travel</td>
+        <td class="mono" style="color:var(--red)">$0.00</td>
+        <td class="mono" style="color:var(--accent)">—</td>
+        <td class="mono" style="color:var(--green);font-weight:700">$100</td>
+        <td class="mono" style="color:var(--muted)">$100</td>
+        <td class="mono">${avgFee !== null ? '$'+avgFee : '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${vsBreakStr}</td>
+      </tr>`;
+    }
+
+    return `<tr style="${rowStyle}">
+      <td style="font-weight:500;color:var(--text)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotClr};margin-right:6px;vertical-align:middle"></span>
+        ${locLabel}
+      </td>
+      <td class="mono" style="color:var(--muted)">${owMi} / ${rtMi}</td>
+      <td class="mono" style="color:var(--muted)">${formatTime(drRTmin)}</td>
+      <td class="mono" style="color:var(--muted)">$${mileageCost.toFixed(2)}</td>
+      <td class="mono" style="color:var(--blue)">$${timeCost.toFixed(2)}</td>
+      <td class="mono" style="color:var(--red);font-weight:600">$${breakEven.toFixed(2)}</td>
+      <td class="mono" style="color:var(--accent)">$${profitAdd.toFixed(2)}</td>
+      <td class="mono" style="color:var(--green);font-weight:700;font-size:14px">$${suggested}</td>
+      <td class="mono" style="color:var(--muted)">$${recMin} ${suggVsRecStr}</td>
+      <td class="mono" style="${avgFee !== null ? 'color:'+dotClr : 'color:var(--muted)'}">
+        ${avgFee !== null ? '$'+avgFee+'<br><span style="font-size:10px;color:var(--muted)">('+cnt+' hearings)</span>' : '—'}
+      </td>
+      <td>${vsBreakStr}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

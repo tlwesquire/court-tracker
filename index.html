@@ -240,6 +240,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   <div class="tab" onclick="go('reprice')">🔄 Repricing</div>
   <div class="tab" onclick="go('catchup')">📈 Rate Catch-Up</div>
   <div class="tab" onclick="go('pricing')">💵 Hearing Pricing</div>
+  <div class="tab" onclick="go('value')">⚖ Value Analysis</div>
 </div>
 
 <div class="main">
@@ -1095,6 +1096,92 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
 
 </div><!-- /panel-pricing -->
 
+<!-- VALUE ANALYSIS PANEL -->
+<div class="panel" id="panel-value">
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Value Analysis — Distance, Time &amp; Dollars</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
+      A <strong style="color:var(--accent)">$150 hearing 10 miles away</strong> is worth more than a
+      <strong style="color:var(--accent)">$300 hearing 130 miles away</strong> once you subtract mileage and value your time.
+      This panel ranks every courthouse by <strong>net $/hr</strong> — what you actually earn per hour of your day after expenses.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Your Time Value ($/hr)</div>
+        <input type="number" id="va-hrval" value="150" min="50" max="500" step="25"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:right"
+          oninput="renderValue()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Opportunity cost per hour</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Appearance Time (min)</div>
+        <input type="number" id="va-appear" value="45" min="15" max="120" step="15"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:right"
+          oninput="renderValue()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Avg time in court</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">IRS Rate ($/mi)</div>
+        <input type="number" id="va-irs" value="0.725" min="0.50" max="1.00" step="0.005"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:right"
+          oninput="renderValue()">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">2026: $0.725/mi</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sort</div>
+        <select id="va-sort" onchange="renderValue()"
+          style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px">
+          <option value="nethr">Best Net $/hr first</option>
+          <option value="netfee">Best Net Fee first</option>
+          <option value="dist">Nearest first</option>
+          <option value="fee">Highest Fee first</option>
+          <option value="alpha">A to Z</option>
+        </select>
+      </div>
+    </div>
+    <div class="stat-row" id="va-stats"></div>
+  </div>
+
+  <div id="va-sweetspot" style="margin-bottom:14px"></div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Courthouse Value Table</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:12px">
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Grade A/B — net $/hr at or above your target</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Grade C/D — fair but below target</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--red);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Grade F — net $/hr below 40% of target or negative</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table style="width:100%;border-collapse:collapse;min-width:900px">
+        <thead>
+          <tr id="va-thead">
+            <th style="text-align:left;background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);white-space:nowrap">Courthouse</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="One-way miles from Oneonta office">OW Mi</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Round-trip drive time">Drive RT</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Total day commitment: drive RT + appearance">Total Time</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="RT miles x IRS rate">Mileage $</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Must charge at least this to cover costs">Break-Even</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Average fee you have charged">Avg Charged</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Avg charged minus mileage cost">Net Fee</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap" title="Net fee divided by total hours in your day">Net $/hr</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap">Grade</th>
+            <th style="background:var(--s2);padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap"># Done</th>
+          </tr>
+        </thead>
+        <tbody id="va-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Distance Band Comparison</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+      Average net earnings per hour grouped by distance — shows the sweet spot between fee size and travel cost.
+    </p>
+    <div id="va-bands"></div>
+  </div>
+</div><!-- /panel-value -->
+
 </div><!-- /main -->
 
 <!-- DETAIL MODAL -->
@@ -1438,17 +1525,21 @@ let H = [
   {id:225,date:'2026-06-08',time:'09:00',hearing_num:'949040',style:'LVNV Funding LLC v. Robert Stanton',setting:'Hearing',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'CC-28434107',result:'Cancelled',fee:0,non_fee:150},
   {id:226,date:'2026-06-08',time:'09:00',hearing_num:'949055',style:'LVNV FUNDING, LLC V. ROBERT STANTON',setting:'Hearing',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'CC-28434102',result:'Completed',fee:150,non_fee:null},
   {id:227,date:'2026-06-08',time:'13:00',hearing_num:'949061',style:'Capital One N.A. v. Johnny Lipham',setting:'Hearing',location:'CLAY COUNTY - ASHLAND',client_ref:'CC-25182131',result:'Completed',fee:275,non_fee:null},
-  {id:228,date:'2026-06-15',time:'09:00',hearing_num:'949529',style:'Barclays Bank Delaware v. Terry L Magby',setting:'Trial',location:'CHAMBERS COUNTY - LAYFATTE',client_ref:'PRO-32859',result:'Accepted',fee:220,non_fee:null},
-  {id:229,date:'2026-06-15',time:'09:00',hearing_num:'949563',style:'CREDIT CENTRAL V. TERRY MAGBY',setting:'Trial',location:'CHAMBERS COUNTY - LAYFATTE',client_ref:'PRO-32859',result:'Accepted',fee:220,non_fee:null},
+  {id:228,date:'2026-06-15',time:'09:00',hearing_num:'949529',style:'Barclays Bank Delaware v. Terry L Magby',setting:'Trial',location:'CHAMBERS COUNTY - LAYFATTE',client_ref:'PRO-32859',result:'Completed',fee:220,non_fee:null},
+  {id:229,date:'2026-06-15',time:'09:00',hearing_num:'949563',style:'CREDIT CENTRAL V. TERRY MAGBY',setting:'Trial',location:'CHAMBERS COUNTY - LAYFATTE',client_ref:'PRO-32859',result:'Completed',fee:220,non_fee:null},
   {id:230,date:'2026-06-18',time:'09:00',hearing_num:'948185',style:'REPUBLIC FINANCE, LLC v. ?Jennifer Maddox',setting:'Bench Trial',location:'ST. CLAIR COUNTY - ASHVILLE',client_ref:'1049585',result:'Accepted',fee:150,non_fee:null},
   {id:231,date:'2026-06-18',time:'09:00',hearing_num:'948198',style:'American Express National Bank v. Rufus Carswell  Jr',setting:'Status Hearing',location:'ST. CLAIR COUNTY - ASHVILLE',client_ref:'1021880',result:'Accepted',fee:150,non_fee:null},
-  {id:232,date:'2026-06-22',time:'09:00',hearing_num:'949614',style:'LVNV Funding, LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'7718279',result:'Accepted',fee:150,non_fee:0},
+  {id:232,date:'2026-06-22',time:'09:00',hearing_num:'949614',style:'LVNV Funding, LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'7718279',result:'Accepted',fee:150,non_fee:null},
   {id:233,date:'2026-06-25',time:'09:00',hearing_num:'946942',style:'LVNV FUNDING, LLC V. SHELLEY DAVIDSON',setting:'Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'277936',result:'Accepted',fee:0,non_fee:150},
   {id:234,date:'2026-06-25',time:'09:00',hearing_num:'946950',style:'ONEMAIN FINANCIAL GROUP, LLC V. ANTHONY MERKLE',setting:'Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'278033',result:'Accepted',fee:0,non_fee:150},
   {id:235,date:'2026-06-29',time:'13:30',hearing_num:'950951',style:'Gulfco of AL, LLC DBA Tower Loan of Anniston v. Debbie Williams',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'PRO-39913',result:'Accepted',fee:175,non_fee:null},
-  {id:236,date:'2026-06-30',time:'09:00',hearing_num:'951101',style:'CREDIT ACCEPTANCE CORP VS. MATTHEW ANDERSON',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'918576',result:'Accepted',fee:225,non_fee:null}
+  {id:236,date:'2026-06-30',time:'09:00',hearing_num:'951101',style:'CREDIT ACCEPTANCE CORP VS. MATTHEW ANDERSON',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'918576',result:'Accepted',fee:225,non_fee:null},
+  {id:237,date:'2026-06-16',time:'10:00',hearing_num:'951335',style:'Republic Finance v. Ronika Johnson',setting:'Garnishment',location:'MORGAN COUNTY - DECATUR',client_ref:'251524',result:'Completed',fee:200,non_fee:null},
+  {id:238,date:'2026-06-22',time:'11:00',hearing_num:'950622',style:'Mariner Finance v Tabaitha D Hereford',setting:'Hearing',location:'MADISON COUNTY - HUNTSVILLE',client_ref:'5196828',result:'Accepted',fee:200,non_fee:null},
+  {id:239,date:'2026-06-22',time:'09:00',hearing_num:'951481',style:'Amex v. James Gullo',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'1148916229',result:'Accepted',fee:150,non_fee:null},
+  {id:240,date:'2026-06-18',time:'09:00',hearing_num:'947411',style:'Capital One, N.A. v. Jeffrey Westbrook',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:375,non_fee:null}
 ];
-let nextId = 237;
+let nextId = 241;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -3111,6 +3202,7 @@ function go(name){
   if(name==='reprice')  renderReprice();
   if(name==='catchup')  renderCatchUp();
   if(name==='pricing')  renderPricing();
+  if(name==='value')    renderValue();
 }
 
 
@@ -3951,8 +4043,7 @@ var AL_COUNTIES = [
   {id:196,date:'2026-05-12',time:'09:00',hearing_num:'938063',style:'Capital One, N.A., Merger to Discover Bank v Jose Rivera',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
   {id:197,date:'2026-05-18',time:'09:00',hearing_num:'940503',style:'LVNV Funding, LLC v Barbara Shea',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
   {id:198,date:'2026-05-26',time:'11:00',hearing_num:'939985',style:'CITIBANK, N.A. vs Glenn Kunis',setting:'Zoom',location:'DALE COUNTY - OZARK',client_ref:'',result:'Accepted',fee:100,non_fee:null},
-  {id:199,date:'2026-05-27',time:'09:00',hearing_num:'939417',style:'AMEX vs Charles Hyde',setting:'Zoom',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:100,non_fee:null}
-];
+  {id:199,date:'2026-05-27',time:'09:00',hearing_num:'939417',style:'AMEX vs Charles Hyde',setting:'Zoom',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:100,non_fee:null}];
 
 function renderCounties() {
   var q       = ($('cty-q')||{value:''}).value.toLowerCase();
@@ -4599,6 +4690,217 @@ function renderPricing() {
       <td>${vsBreakStr}</td>
     </tr>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VALUE ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderValue() {
+  var hrVal   = parseFloat(document.getElementById('va-hrval').value)  || 150;
+  var appearM = parseFloat(document.getElementById('va-appear').value) || 45;
+  var irsRate = parseFloat(document.getElementById('va-irs').value)    || MR;
+  var sortBy  = document.getElementById('va-sort').value;
+
+  // Collect historical avg fee per county from completed hearings
+  var countyFees = {}, countyCnt = {};
+  for (var i = 0; i < H.length; i++) {
+    var h = H[i];
+    if (h.result !== 'Completed' || !h.fee || !h.location) continue;
+    if (!countyFees[h.location]) { countyFees[h.location] = 0; countyCnt[h.location] = 0; }
+    countyFees[h.location] += h.fee;
+    countyCnt[h.location]++;
+  }
+
+  // Build one row per county that has distance data
+  var rows = [];
+  var locs = Object.keys(DIST);
+  for (var li = 0; li < locs.length; li++) {
+    var loc     = locs[li];
+    var mi      = DIST[loc] || 0;
+    var rtMi    = mi * 2;
+    var driveOW = getDriveMin(loc) || Math.round(mi * 60 / 55);
+    var driveRT = driveOW * 2;
+    var totalMin = driveRT + appearM;
+    var totalHrs = totalMin / 60;
+    var mileage  = Math.round(rtMi * irsRate);
+    var breakEven = Math.round(mileage + totalHrs * hrVal);
+    var cnt     = countyCnt[loc] || 0;
+    var avgFee  = cnt > 0 ? Math.round(countyFees[loc] / cnt) : null;
+    var netFee  = avgFee !== null ? avgFee - mileage : null;
+    var netHr   = (netFee !== null && totalHrs > 0) ? Math.round(netFee / totalHrs) : null;
+
+    var grade, gradeClr;
+    if (netHr === null)          { grade = 'N/A'; gradeClr = 'var(--muted)'; }
+    else if (netHr >= hrVal)     { grade = 'A';   gradeClr = 'var(--green)'; }
+    else if (netHr >= hrVal*0.8) { grade = 'B';   gradeClr = 'var(--green)'; }
+    else if (netHr >= hrVal*0.6) { grade = 'C';   gradeClr = 'var(--accent)'; }
+    else if (netHr >= hrVal*0.4) { grade = 'D';   gradeClr = 'var(--accent)'; }
+    else if (netHr >= 0)         { grade = 'F';   gradeClr = 'var(--red)'; }
+    else                         { grade = 'F-';  gradeClr = 'var(--red)'; }
+
+    rows.push({ loc:loc, mi:mi, rtMi:rtMi, driveRT:driveRT, totalMin:totalMin,
+                totalHrs:totalHrs, mileage:mileage, breakEven:breakEven,
+                avgFee:avgFee, netFee:netFee, netHr:netHr,
+                grade:grade, gradeClr:gradeClr, cnt:cnt });
+  }
+
+  // Sort
+  rows.sort(function(a, b) {
+    if (sortBy === 'nethr')  return (b.netHr  !== null ? b.netHr  : -9999) - (a.netHr  !== null ? a.netHr  : -9999);
+    if (sortBy === 'netfee') return (b.netFee !== null ? b.netFee : -9999) - (a.netFee !== null ? a.netFee : -9999);
+    if (sortBy === 'dist')   return a.mi - b.mi;
+    if (sortBy === 'fee')    return (b.avgFee || 0) - (a.avgFee || 0);
+    return a.loc.localeCompare(b.loc);
+  });
+
+  // Summary stats
+  var withHist = rows.filter(function(r){ return r.netHr !== null; });
+  var bestRow  = withHist.length ? withHist[0] : null; // already sorted by netHr desc when default
+  // resort to get best for stats regardless of current sort
+  var forStats = rows.filter(function(r){ return r.netHr !== null; }).slice();
+  forStats.sort(function(a,b){ return b.netHr - a.netHr; });
+  var statBest  = forStats.length ? forStats[0] : null;
+  var statWorst = forStats.length ? forStats[forStats.length-1] : null;
+  var avgNetHr  = forStats.length ? Math.round(forStats.reduce(function(s,r){ return s+r.netHr; }, 0) / forStats.length) : 0;
+  var aGrades   = forStats.filter(function(r){ return r.grade==='A'||r.grade==='B'; }).length;
+
+  var scl = function(loc){ var m=loc.match(/ - (.+)$/); return m?m[1]:loc.replace(/ COUNTY.*/,''); };
+
+  document.getElementById('va-stats').innerHTML =
+    '<div class="stat" style="border-top:3px solid var(--green)">' +
+    '<div class="stat-lbl">Best Value County</div>' +
+    '<div class="stat-val" style="font-size:17px">' + (statBest ? scl(statBest.loc) : '—') + '</div>' +
+    '<div class="stat-sub">' + (statBest ? '$'+statBest.netHr+'/hr net · '+statBest.mi+' mi' : '—') + '</div></div>' +
+
+    '<div class="stat">' +
+    '<div class="stat-lbl">Avg Net $/hr</div>' +
+    '<div class="stat-val">$' + avgNetHr + '</div>' +
+    '<div class="stat-sub">Across ' + forStats.length + ' active courthouses</div></div>' +
+
+    '<div class="stat" style="border-top:3px solid var(--green)">' +
+    '<div class="stat-lbl">A/B Grade Counties</div>' +
+    '<div class="stat-val">' + aGrades + '</div>' +
+    '<div class="stat-sub">At or above your hourly rate</div></div>' +
+
+    '<div class="stat" style="border-top:3px solid var(--red)">' +
+    '<div class="stat-lbl">Lowest Value County</div>' +
+    '<div class="stat-val" style="font-size:17px">' + (statWorst ? scl(statWorst.loc) : '—') + '</div>' +
+    '<div class="stat-sub">' + (statWorst ? '$'+statWorst.netHr+'/hr net · '+statWorst.mi+' mi' : '—') + '</div></div>';
+
+  // Sweet spot and warning callouts
+  var sweetRows = forStats.filter(function(r){ return r.mi <= 80 && (r.grade==='A'||r.grade==='B'); });
+  var poorRows  = forStats.filter(function(r){ return r.netHr < hrVal * 0.4; });
+  var ssHtml = '';
+  if (sweetRows.length) {
+    var sweetList = sweetRows.map(function(r){
+      return '<strong style="color:var(--green)">' + scl(r.loc) + '</strong>' +
+             ' <span style="color:var(--muted)">(' + r.mi + ' mi &middot; $' + r.netHr + '/hr)</span>';
+    }).join(' &nbsp;|&nbsp; ');
+    ssHtml += '<div style="background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.2);border-radius:8px;padding:13px 16px;margin-bottom:8px">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Sweet Spot — High Value, Short Drive (under 80 mi)</div>' +
+      '<div style="font-size:13px;color:var(--text2);line-height:2">' + sweetList + '</div></div>';
+  }
+  if (poorRows.length) {
+    var poorList = poorRows.map(function(r){
+      return '<strong style="color:var(--red)">' + scl(r.loc) + '</strong>' +
+             ' <span style="color:var(--muted)">(' + r.mi + ' mi &middot; $' + r.netHr + '/hr)</span>';
+    }).join(' &nbsp;|&nbsp; ');
+    ssHtml += '<div style="background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.2);border-radius:8px;padding:13px 16px">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Poor Value — Raise Rates at These Courthouses</div>' +
+      '<div style="font-size:13px;color:var(--text2);line-height:2">' + poorList + '</div></div>';
+  }
+  document.getElementById('va-sweetspot').innerHTML = ssHtml;
+
+  // Table rows
+  var tbodyHtml = '';
+  for (var ri = 0; ri < rows.length; ri++) {
+    var r = rows[ri];
+    var rowBg = ri % 2 === 1 ? 'background:rgba(255,255,255,.015)' : '';
+    var county = r.loc.replace(/ COUNTY - .*/,'').replace(/\b(\w)/g, function(c){ return c.toUpperCase(); }).toLowerCase().replace(/\b(\w)/g, function(c){ return c.toUpperCase(); });
+    var city   = r.loc.replace(/.*- /,'');
+
+    var feeTd = r.avgFee !== null
+      ? '<span style="font-family:\'IBM Plex Mono\',monospace;color:var(--text)">' + fmt(r.avgFee) + '</span>' +
+        ' <span style="font-size:10px;color:var(--muted)">(' + r.cnt + 'x)</span>'
+      : '<span style="color:var(--muted);font-size:11px">—</span>';
+
+    var netFeeTd = r.netFee !== null
+      ? '<span style="font-family:\'IBM Plex Mono\',monospace;color:' + (r.netFee >= 0 ? 'var(--green)' : 'var(--red)') + ';font-weight:600">' + fmt(r.netFee) + '</span>'
+      : '<span style="color:var(--muted)">—</span>';
+
+    var netHrTd = r.netHr !== null
+      ? '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;color:' + r.gradeClr + '">' + fmt(r.netHr) + '</span>' +
+        '<span style="font-size:10px;color:var(--muted)">/hr</span>'
+      : '<span style="color:var(--muted)">—</span>';
+
+    var barPct = (r.netHr !== null && hrVal > 0) ? Math.min(100, Math.max(0, Math.round(r.netHr / hrVal * 100))) : 0;
+
+    tbodyHtml +=
+      '<tr style="border-bottom:1px solid var(--bd);cursor:default;' + rowBg + '">' +
+      '<td style="padding:8px 10px;font-weight:500;color:var(--text);min-width:160px">' +
+        '<div style="font-size:12px">' + city + '</div>' +
+        '<div style="font-size:10px;color:var(--muted)">' + county + ' County</div>' +
+        '<div style="height:3px;border-radius:2px;background:var(--bd);margin-top:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + barPct + '%;background:' + r.gradeClr + ';border-radius:2px"></div>' +
+        '</div>' +
+      '</td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted)">' + r.mi + '</td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted)">' + formatTime(r.driveRT) + '</td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--blue)">' + formatTime(r.totalMin) + '</td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--red)">$' + r.mileage + '</td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:600;color:var(--red)">$' + r.breakEven + '</td>' +
+      '<td style="padding:8px 10px;text-align:center">' + feeTd + '</td>' +
+      '<td style="padding:8px 10px;text-align:center">' + netFeeTd + '</td>' +
+      '<td style="padding:8px 10px;text-align:center">' + netHrTd + '</td>' +
+      '<td style="padding:8px 10px;text-align:center"><span style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;font-weight:700;color:' + r.gradeClr + '">' + r.grade + '</span></td>' +
+      '<td style="padding:8px 10px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted)">' + r.cnt + '</td>' +
+      '</tr>';
+  }
+  document.getElementById('va-tbody').innerHTML = tbodyHtml;
+
+  // Distance bands
+  var bands = [
+    { label:'Under 20 mi',  min:0,   max:20  },
+    { label:'21 to 50 mi',  min:21,  max:50  },
+    { label:'51 to 80 mi',  min:51,  max:80  },
+    { label:'81 to 120 mi', min:81,  max:120 },
+    { label:'121 to 200 mi',min:121, max:200 },
+    { label:'Over 200 mi',  min:201, max:9999},
+  ];
+  var bandsHtml = '';
+  var maxNetHr2 = 0;
+  var bandData2 = [];
+  for (var bi = 0; bi < bands.length; bi++) {
+    var b = bands[bi];
+    var inBand = forStats.filter(function(r){ return r.mi >= b.min && r.mi <= b.max; });
+    if (!inBand.length) continue;
+    var bAvgNetHr = Math.round(inBand.reduce(function(s,r){ return s+r.netHr; }, 0) / inBand.length);
+    var bAvgFee   = Math.round(inBand.reduce(function(s,r){ return s+(r.avgFee||0); }, 0) / inBand.length);
+    var bAvgDrive = Math.round(inBand.reduce(function(s,r){ return s+r.driveRT; }, 0) / inBand.length);
+    if (bAvgNetHr > maxNetHr2) maxNetHr2 = bAvgNetHr;
+    bandData2.push({ label:b.label, cnt:inBand.length, avgNetHr:bAvgNetHr, avgFee:bAvgFee, avgDrive:bAvgDrive });
+  }
+  for (var bdi = 0; bdi < bandData2.length; bdi++) {
+    var bd = bandData2[bdi];
+    var bPct = maxNetHr2 > 0 ? Math.min(100, Math.max(0, Math.round(bd.avgNetHr / maxNetHr2 * 100))) : 0;
+    var bClr = bd.avgNetHr >= hrVal ? 'var(--green)' : bd.avgNetHr >= hrVal * 0.6 ? 'var(--accent)' : 'var(--red)';
+    bandsHtml +=
+      '<div style="margin-bottom:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:6px">' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--text2);font-weight:600">' + bd.label + '</span>' +
+          '<span style="font-size:12px;color:var(--muted)">' + bd.cnt + ' courthouse' + (bd.cnt!==1?'s':'') +
+            ' &nbsp;&middot;&nbsp; Avg fee: <b style="color:var(--accent)">' + fmt(bd.avgFee) + '</b>' +
+            ' &nbsp;&middot;&nbsp; Drive RT: <b style="color:var(--blue)">' + formatTime(bd.avgDrive) + '</b>' +
+            ' &nbsp;&middot;&nbsp; Net $/hr: <b style="color:' + bClr + '">' + fmt(bd.avgNetHr) + '</b>' +
+          '</span>' +
+        '</div>' +
+        '<div style="height:10px;border-radius:5px;background:var(--bd);overflow:hidden">' +
+          '<div style="height:100%;width:' + bPct + '%;background:' + bClr + ';border-radius:5px;transition:width .4s"></div>' +
+        '</div>' +
+      '</div>';
+  }
+  document.getElementById('va-bands').innerHTML = bandsHtml ||
+    '<div style="color:var(--muted);font-size:13px">No completed hearings with fee data yet.</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

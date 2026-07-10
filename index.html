@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Court Appearance Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 /* ── TOKENS ── */
 :root{
@@ -201,9 +202,108 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){.stat-row{grid-template-columns:repeat(3,1fr)}.ig{grid-template-columns:1fr}}
 @media(max-width:640px){.stat-row{grid-template-columns:1fr 1fr}.fgrid{grid-template-columns:1fr}.fi{width:160px}}
+
+/* ══ 2026 MODERN UI UPGRADE ══ */
+:root{
+  --bg:#0a0f18;--s1:#111827;--s2:#172033;--bd:#2a3548;
+  --accent:#f2b84b;--green:#4ade80;--blue:#60a5fa;--red:#fb7185;
+  --muted:#94a3b8;--text:#f8fafc;--text2:#d7dee9;
+  --shadow:0 12px 32px rgba(0,0,0,.22);--radius:14px;
+}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(circle at 10% -10%,rgba(96,165,250,.09),transparent 28%),var(--bg);line-height:1.45}
+button,input,select,textarea{font:inherit}
+button,.tab,[onclick]{-webkit-tap-highlight-color:transparent}
+.hdr{padding:14px clamp(14px,3vw,30px);backdrop-filter:blur(16px);background:rgba(17,24,39,.9);box-shadow:0 1px 0 rgba(255,255,255,.03)}
+.hdr-title{font-family:'IBM Plex Sans',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.hdr-sub{max-width:920px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbadge{padding:6px 11px;background:rgba(255,255,255,.035)}
+.tabs{position:sticky;top:73px;z-index:90;padding:8px clamp(10px,2vw,24px);gap:6px;background:rgba(17,24,39,.92);backdrop-filter:blur(16px);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:1px solid transparent;border-radius:999px;padding:8px 12px;font-size:12px;transition:.18s ease}
+.tab:hover{background:rgba(255,255,255,.045);border-color:var(--bd)}
+.tab.on{background:rgba(242,184,75,.13);border-color:rgba(242,184,75,.35);color:var(--accent);box-shadow:inset 0 0 0 1px rgba(242,184,75,.04)}
+.main{padding:22px clamp(12px,3vw,30px) 80px}
+.panel{content-visibility:auto;contain-intrinsic-size:900px}
+.panel.on{animation:panelIn .18s ease-out}
+@keyframes panelIn{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card,.ic,.stat,.tw,.bcard{border-radius:var(--radius);box-shadow:var(--shadow);border-color:rgba(148,163,184,.18)}
+.card{padding:clamp(15px,2vw,22px)}
+.card-title{font-family:'IBM Plex Sans',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.015em}
+.stat{padding:16px}.stat-val{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.04em}
+.btn{min-height:38px;border-radius:9px;padding:8px 14px;box-shadow:0 4px 14px rgba(0,0,0,.13)}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(96,165,250,.38);outline-offset:2px}
+input[type=text],input[type=number],input[type=datetime-local],input[type=date],input[type=time],select,textarea{min-height:40px;border-radius:9px;padding:8px 11px;background:#121b2b}
+.fbar{position:sticky;top:124px;z-index:20;background:rgba(10,15,24,.92);backdrop-filter:blur(12px);padding:10px 0}
+thead th{position:sticky;top:0;z-index:3;padding:11px 10px;background:#182236}
+td{padding:10px}.tw{max-width:100%;scrollbar-color:var(--bd) transparent}
+tbody tr:hover{background:rgba(96,165,250,.055)}
+.modal{width:min(680px,calc(100vw - 24px));border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.mobile-nav{display:none}
+.skip-link{position:fixed;left:12px;top:-50px;z-index:999;background:var(--accent);color:#111;padding:8px 12px;border-radius:8px;font-weight:700}.skip-link:focus{top:12px}
+@media(max-width:1100px){.hdr-sub{max-width:600px}.tabs{top:91px}.fbar{top:143px}.fgrid{grid-template-columns:repeat(2,1fr)}.fgrid [style*="grid-column:span 3"]{grid-column:span 2!important}}
+@media(max-width:760px){
+  body{font-size:15px}.hdr{position:relative;display:grid;grid-template-columns:1fr auto;padding:12px 14px}.hdr-sub,.hdr-badges{display:none}#hdr-clock{grid-column:2;grid-row:1}.hdr-title{font-size:17px}
+  .tabs{display:none}.mobile-nav{display:flex;position:sticky;top:0;z-index:100;padding:9px 12px;background:rgba(17,24,39,.96);border-bottom:1px solid var(--bd);backdrop-filter:blur(16px);gap:8px}.mobile-nav select{width:100%;font-weight:600;color:var(--text)}
+  .main{padding:14px 10px 76px}.stat-row,[style*="grid-template-columns:repeat(5"],[style*="grid-template-columns:repeat(4"],[style*="grid-template-columns:1fr 1fr"],.ig,.i3{grid-template-columns:1fr!important}
+  .fgrid{grid-template-columns:1fr}.fgrid [style*="grid-column"]{grid-column:span 1!important}.fbar{position:static;display:grid;grid-template-columns:1fr 1fr}.fbar .fi,.fbar .fs{width:100%;min-width:0}.fbar input:first-child{grid-column:1/-1}
+  .card,.ic,.stat{border-radius:12px}.tw{border-radius:12px}table{min-width:760px}.pag{position:sticky;left:0}.modal{padding:16px;max-height:92vh}.drow{display:block}.dkey{width:auto;margin-bottom:3px}
+  #panel-calendar>div,#panel-import>div{grid-template-columns:1fr!important}.cal-day{min-height:62px}.cal-evt{font-size:9px}
+}
+@media(max-width:420px){.fbar{grid-template-columns:1fr}.fbar>*{grid-column:1!important}.stat-row{grid-template-columns:1fr!important}.main{padding-inline:8px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.workflow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 14px}
+.workflow button{min-height:54px;text-align:left;border:1px solid var(--bd);background:linear-gradient(145deg,var(--s1),var(--s2));color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;font:600 12px 'IBM Plex Sans',sans-serif;transition:border-color .15s,transform .15s}
+.workflow button:hover{border-color:var(--accent);transform:translateY(-1px)}
+.workflow button span{display:block;color:var(--muted);font-size:10px;font-weight:400;margin-top:3px}
+.sync-note{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.28);border-radius:8px;padding:10px 12px;color:var(--text2);font-size:12px;margin-bottom:12px}
+@media(max-width:700px){.workflow{grid-template-columns:1fr 1fr}.workflow button{min-height:60px}.hdr-sub{display:none}.hdr{padding:10px 12px}.hdr-badges{width:100%;display:grid;grid-template-columns:1fr 1fr}.hbadge{text-align:center}.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}}
+@media(max-width:390px){.workflow{grid-template-columns:1fr}}
+
+/* 2026 LIGHT + SIMPLIFIED UI */
+:root{
+  --bg:#f4f7fb;--s1:#ffffff;--s2:#f7f9fc;--bd:#d9e2ec;
+  --accent:#9a6700;--green:#18794e;--blue:#2563a6;--red:#c2414b;
+  --muted:#66758a;--text:#17243a;--text2:#34445b;
+  --shadow:0 6px 20px rgba(43,61,86,.08);--radius:14px;
+}
+body{background:linear-gradient(180deg,#eef4fa 0,#f7f9fc 240px,var(--bg) 520px);color:var(--text)}
+.hdr{background:rgba(255,255,255,.96);border-color:var(--bd);box-shadow:0 1px 8px rgba(43,61,86,.07)}
+.hdr-title{color:#1d4f7a}.hdr-sub{color:var(--muted)}
+.hbadge{background:#f3f7fb;border-color:var(--bd);color:var(--muted)}
+.hbadge b{color:#1d4f7a}.hbadge:nth-child(n+3){display:none}
+.tabs{background:rgba(255,255,255,.96);border-color:var(--bd);box-shadow:0 3px 12px rgba(43,61,86,.05);overflow:visible}
+.tab{color:#596a80}.tab:hover{background:#f0f5fa;border-color:#c9d7e5}.tab.on{background:#e8f1f9;border-color:#aac5dc;color:#164f7a;box-shadow:none}
+.more-tools{margin-left:auto;min-height:36px!important;padding:7px 34px 7px 12px!important;border:1px solid var(--bd)!important;border-radius:999px!important;background:#f7f9fc!important;color:var(--text2)!important;font-size:12px;font-weight:600;cursor:pointer}
+.mobile-nav{background:rgba(255,255,255,.98)!important;border-color:var(--bd)!important}.mobile-nav select{background:#fff!important;color:var(--text)!important}
+.card,.ic,.stat,.tw,.bcard{background:#fff;border-color:var(--bd);box-shadow:var(--shadow)}
+.workflow button{background:#fff;border-color:var(--bd);color:var(--text);box-shadow:0 3px 12px rgba(43,61,86,.06)}
+.workflow button:hover{background:#f7fbff;border-color:#8db5d3}.workflow button span{color:var(--muted)}
+.fbar{background:rgba(244,247,251,.94)}
+input[type=text],input[type=number],input[type=datetime-local],input[type=date],input[type=time],select,textarea{background:#fff;color:var(--text);border-color:#cbd7e3}
+input::placeholder,textarea::placeholder{color:#8795a8}
+thead th{background:#eaf1f7;color:#243c54;border-color:#d3dee8}td{border-color:#e5ebf1}tbody tr:hover{background:#f1f7fb}
+.btn{box-shadow:none}.btn:not(.ghost){background:#1f6b9a;color:#fff;border-color:#1f6b9a}.btn.ghost{background:#fff;color:#35546f;border-color:#bfd0df}
+.ibox{background:#f7fafc;border-color:#d6e1eb}.ibox.blue{background:#f1f7fc;border-color:#c8dceb}
+.modal{background:#fff;color:var(--text);box-shadow:0 30px 80px rgba(43,61,86,.24)}
+.sync-note{background:#edf6fc;border-color:#c6dfef;color:#35546f}
+.theme-toggle{min-height:36px;border:1px solid var(--bd);border-radius:999px;padding:7px 12px;background:var(--s2);color:var(--text);font-weight:700;cursor:pointer;white-space:nowrap}
+.theme-toggle:hover{border-color:var(--blue)}
+html[data-theme="night"]{--bg:#0b1220;--s1:#121c2c;--s2:#182438;--bd:#304056;--accent:#f0b84b;--green:#4ecb8d;--blue:#6bb7f0;--red:#ff7b86;--muted:#9aa9bd;--text:#f2f6fb;--text2:#d0d9e5;--shadow:0 10px 28px rgba(0,0,0,.24)}
+html[data-theme="night"] body{background:linear-gradient(180deg,#0e1929 0,#0b1220 420px);color:var(--text)}
+html[data-theme="night"] .hdr,html[data-theme="night"] .tabs,html[data-theme="night"] .mobile-nav{background:rgba(18,28,44,.97)!important;border-color:var(--bd)}
+html[data-theme="night"] .hdr-title{color:#f0c76f}html[data-theme="night"] .hbadge,html[data-theme="night"] .more-tools,html[data-theme="night"] .workflow button{background:#182438!important;color:var(--text)!important}
+html[data-theme="night"] .hbadge b{color:#f0c76f}html[data-theme="night"] .tab{color:#aebbd0}html[data-theme="night"] .tab:hover{background:#1b2a40}html[data-theme="night"] .tab.on{background:#25354a;border-color:#526783;color:#f0c76f}
+html[data-theme="night"] .card,html[data-theme="night"] .ic,html[data-theme="night"] .stat,html[data-theme="night"] .tw,html[data-theme="night"] .bcard,html[data-theme="night"] .modal{background:var(--s1);border-color:var(--bd)}
+html[data-theme="night"] .fbar{background:rgba(11,18,32,.94)}html[data-theme="night"] input,html[data-theme="night"] select,html[data-theme="night"] textarea{background:#111c2c!important;color:var(--text)!important;border-color:var(--bd)}
+html[data-theme="night"] thead th{background:#1a2940;color:#e5edf6;border-color:var(--bd)}html[data-theme="night"] td{border-color:#26364b}html[data-theme="night"] tbody tr:hover{background:#17263a}
+html[data-theme="night"] .btn.ghost{background:#152237;color:#d9e5f2;border-color:#40536b}html[data-theme="night"] .ibox{background:#152237;border-color:#30435b}
+@media(max-width:760px){.more-tools{display:none}.hdr-badges{display:none!important}.theme-toggle{grid-column:1;grid-row:2;justify-self:start;margin-top:6px}}
+
 </style>
 </head>
 <body>
+<a class="skip-link" href="#app-main">Skip to main content</a>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -215,6 +315,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
     <div id="clock-time" style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--accent)">—</div>
     <div id="clock-date" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.04em">—</div>
   </div>
+  <button class="theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch to night mode">🌙 Night</button>
   <div class="hdr-badges">
     <div class="hbadge">Hearings: <b id="hb1">—</b></div>
     <div class="hbadge">Revenue: <b id="hb2">—</b></div>
@@ -227,26 +328,32 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
 <div class="tabs">
   <div class="tab on"  onclick="go('dash')">📊 Dashboard</div>
   <div class="tab" onclick="go('hearings')">📋 Hearings</div>
-  <div class="tab" onclick="go('fairrate')">💰 Fair Rates</div>
-  <div class="tab" onclick="go('bundles')">📦 Bundles</div>
-  <div class="tab" onclick="go('clients')">⚖ Creditors</div>
   <div class="tab" onclick="go('add')">➕ Add</div>
   <div class="tab" onclick="go('calendar')">📅 Calendar</div>
-  <div class="tab" onclick="go('time')">⏱ Time</div>
-  <div class="tab" onclick="go('rates')">📋 Rates</div>
-  <div class="tab" onclick="go('import')">📥 Import</div>
   <div class="tab" onclick="go('tripcalc')">🗺 Trip Calc</div>
-  <div class="tab" onclick="go('counties')">🏛 AL Counties</div>
-  <div class="tab" onclick="go('reprice')">🔄 Repricing</div>
-  <div class="tab" onclick="go('catchup')">📈 Rate Catch-Up</div>
-  <div class="tab" onclick="go('pricing')">💵 Hearing Pricing</div>
-  <div class="tab" onclick="go('value')">⚖ Value Analysis</div>
+  <div class="tab" onclick="go('import')">↕ Data</div>
+  <select class="more-tools" id="more-tools-select" aria-label="More tools">
+    <option value="">More tools…</option>
+    <optgroup label="Rates and profitability">
+      <option value="fairrate">Fair Rates</option><option value="rates">Rate Card</option><option value="reprice">Repricing</option><option value="catchup">Rate Catch-Up</option><option value="pricing">Hearing Pricing</option><option value="value">Value Analysis</option>
+    </optgroup>
+    <optgroup label="Reports and reference">
+      <option value="bundles">Bundles</option><option value="clients">Creditors</option><option value="time">Time Analysis</option><option value="counties">Alabama Counties</option>
+    </optgroup>
+  </select>
 </div>
 
-<div class="main">
+<div class="mobile-nav" aria-label="Mobile navigation"><select id="mobile-tab-select" aria-label="Choose section"></select></div>
+<div class="main" id="app-main">
 
 <!-- ══ DASHBOARD ══ -->
 <div class="panel on" id="panel-dash">
+  <div class="workflow" aria-label="Quick actions">
+    <button onclick="go('add')">➕ Add a hearing<span>Enter one new court appearance</span></button>
+    <button onclick="go('hearings')">📋 Find a hearing<span>Search, filter, and update records</span></button>
+    <button onclick="go('calendar')">📅 Review schedule<span>See upcoming dates and conflicts</span></button>
+    <button onclick="go('import')">↕ Sync workbook<span>Import or export the shared data format</span></button>
+  </div>
   <div style="background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:10px">
     <span style="font-size:18px;flex-shrink:0">⚖️</span>
     <div>You appear as <strong style="color:var(--text)">local counsel for defendants</strong> in debt collection cases, contracted through <strong style="color:var(--text)">Nationwide Appearance Attorneys</strong>. Creditors listed (LVNV, Capital One, Bank of America, etc.) are the opposing plaintiffs.</div>
@@ -306,8 +413,8 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
       <th style="color:var(--blue)">Drive Time</th>
       <th onclick="hSrt('fee')">Fee</th>
       <th>Non-Fee</th>
-      <th onclick="hSrt('rec')">Rec. Min</th>
-      <th onclick="hSrt('gap')">Gap vs Fair</th>
+      <th onclick="hSrt('rec')">Agreed Avg</th>
+      <th onclick="hSrt('gap')">Gap vs Avg</th>
       <th>Defendant</th>
       <th onclick="hSrt('result')">Status</th>
       <th></th>
@@ -320,9 +427,9 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
 <!-- ══ FAIR RATE ANALYSIS ══ -->
 <div class="panel" id="panel-fairrate">
   <div class="card">
-    <div class="card-title">💰 Fair Rate Analysis — All Hearings</div>
+    <div class="card-title">💰 Fair Analysis — Actual Agreed Averages</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-      Every hearing is assessed against a <strong style="color:var(--accent)">recommended minimum fee</strong> based on driving distance from your Oneonta office. You appear as <strong>local defense counsel</strong> in each case, contracted by Nationwide Appearance Attorneys. Bundled hearings (same day, same county) get a reduced <strong style="color:var(--blue)">bundle fair rate</strong> since mileage is shared across the trip.
+      Each hearing is compared with the <strong style="color:var(--accent)">actual average paid or accepted fee</strong> for that courthouse and hearing type. Two or more matching matters use the type-specific average; smaller samples fall back to the courthouse-wide average, then to the distance model. Averages are rounded to the nearest $5 and update whenever records change.
     </div>
     <div class="stat-row" id="fr-stats" style="grid-template-columns:repeat(5,1fr)"></div>
   </div>
@@ -335,7 +442,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
     <select class="fs" id="fr-verdict" onchange="frFilt()">
       <option value="">All Verdicts</option>
       <option value="good">✓ At/Above Rate</option>
-      <option value="fair">~ Fair (within 30%)</option>
+      <option value="fair">~ Near average (within 20%)</option>
       <option value="under">▲ Underpriced</option>
       <option value="pending">⏳ TBD</option>
       <option value="cancelled">✕ Cancelled</option>
@@ -351,9 +458,9 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
       <th onclick="frSrt('location')">County</th>
       <th onclick="frSrt('miles')">One-Way / RT</th>
       <th onclick="frSrt('fee')">Fee</th>
-      <th onclick="frSrt('rec')">Rec. Min</th>
-      <th onclick="frSrt('fair')">Fair Rate</th>
-      <th onclick="frSrt('gap')">Gap vs Fair Rate</th>
+      <th onclick="frSrt('rec')">Agreed Avg</th>
+      <th onclick="frSrt('fair')">Analysis Rate</th>
+      <th onclick="frSrt('gap')">Gap vs Avg</th>
       <th>Verdict</th>
       <th>Bundle</th>
     </tr></thead>
@@ -367,7 +474,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
   <div class="card">
     <div class="card-title">📦 Bundled Hearings</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-      Hearings on the <strong>same date at the same county courthouse</strong> share one drive. The <strong style="color:var(--accent)">lead hearing</strong> bears the full recommended rate (full mileage + appearance). Each <strong style="color:var(--blue)">additional hearing</strong> is priced at the zero-distance appearance rate only — you're already there, so no extra travel cost applies.
+      Hearings on the <strong>same date at the same county courthouse</strong> share one drive. Bundle status remains visible for trip planning, while Fair Analysis uses the <strong style="color:var(--accent)">actual average price agreed at that courthouse</strong> instead of automatically discounting additional matters.
     </div>
     <div id="b-pricing-alert"></div>
     <div class="stat-row" id="b-stats" style="grid-template-columns:repeat(5,1fr)"></div>
@@ -429,13 +536,13 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
     <div class="card">
       <div class="card-title">📥 Import Hearings from CSV</div>
       <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-        Upload or paste a CSV with columns: <code style="font-family:'IBM Plex Mono',monospace;background:var(--s2);padding:1px 5px;border-radius:3px">date, time, hearing_num, style, setting, location, client_ref, result, fee, non_fee</code>. New rows are merged by hearing number — duplicates are skipped.
+          Upload the improved workbook or a CSV. The app recognizes both workbook headings (<strong>Date / Time, Hearing #, Case Style, Status</strong>) and app headings (<strong>date, time, hearing_num, style, result</strong>). Existing records are matched by hearing number and date.
       </div>
       <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()" ondragover="dropOver(event)" ondrop="dropFile(event)" ondragleave="this.classList.remove('drag')">
-        <input type="file" id="csv-file" accept=".csv,.xlsx" onchange="fileChosen(this)">
+          <input type="file" id="csv-file" accept=".csv,.xlsx,.xls" onchange="fileChosen(this)">
         <div style="font-size:28px;margin-bottom:8px">📂</div>
-        <div style="font-size:14px;font-weight:500">Drop CSV here or click to browse</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Supports .csv files</div>
+          <div style="font-size:14px;font-weight:500">Drop workbook or CSV here, or click to browse</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Supports .xlsx, .xls, and .csv</div>
       </div>
       <div style="margin:12px 0;text-align:center;font-size:12px;color:var(--muted)">— or paste CSV text —</div>
       <textarea id="csv-paste" rows="6" style="width:100%;resize:vertical;background:var(--s2);border:1px solid var(--bd);border-radius:6px;padding:9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2)" placeholder="date,time,hearing_num,style,setting,location,client_ref,result,fee,non_fee&#10;2026-04-10,09:00,930001,Capital One v. John Doe,Trial,CALHOUN COUNTY - ANNISTON,1234567,Accepted,125,"></textarea>
@@ -470,7 +577,7 @@ pre.csv-preview{background:var(--s2);border:1px solid var(--bd);border-radius:6p
       <div class="card">
         <div class="card-title" style="color:var(--red)">⚠ Data Management</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px">
-          All data is stored in this browser session. Export to CSV before closing. Use Import to reload previously exported data.
+        Data is saved in this browser on this device. Keep the workbook as the master record and export a backup after major changes.
         </div>
         <button class="btn danger" onclick="clearAll()">Clear All Hearing Data</button>
       </div>
@@ -1491,7 +1598,7 @@ let H = [
   {id:191,date:'2026-05-13',time:'10:00',hearing_num:'938629',style:'Citibank N.A v. Davin Moore',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'PRO-35658',result:'Completed',fee:165,non_fee:null},
   {id:192,date:'2026-05-14',time:'09:00',hearing_num:'936203',style:'Capital One, N.A. v. Charles R. Huckabee',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'M-42894',result:'Completed',fee:225,non_fee:null},
   {id:193,date:'2026-05-18',time:'09:00',hearing_num:'940503',style:'LVNV Funding, LLC v Barbara Shea',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'828188',result:'Completed',fee:150,non_fee:null},
-  {id:194,date:'2026-05-18',time:'13:30',hearing_num:'941602',style:'Capital One, N.A. v. Teresa S Thrash',setting:'In-Person',location:'CALHOUN COUNTY - ANNISTON',client_ref:'ALV-1088821064',result:'Completed',fee:175,non_fee:null},
+  {id:194,date:'2026-05-18',time:'13:30',hearing_num:'941602',style:'Capital One, N.A. v. Teresa S Thrash',setting:'In-Person',location:'CALHOUN COUNTY - ANNISTON',client_ref:'1088821064',result:'Completed',fee:175,non_fee:null},
   {id:195,date:'2026-05-18',time:'13:30',hearing_num:'938822',style:'LVNV Funding LLC v John Standridge',setting:'Bench Trial',location:'TUSCALOOSA COUNTY - TUSCALOOSA',client_ref:'225285',result:'Cancelled',fee:0,non_fee:225},
   {id:196,date:'2026-05-19',time:'09:00',hearing_num:'940830',style:'CAPITAL ONE, N.A. v. LINDSAY GREEN',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'1118878',result:'Completed',fee:235,non_fee:null},
   {id:197,date:'2026-05-19',time:'10:00',hearing_num:'938022',style:'Jefferson Capital Systems v. Melanie Authement',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'277090',result:'Cancelled',fee:0,non_fee:150},
@@ -1509,7 +1616,7 @@ let H = [
   {id:209,date:'2026-06-04',time:'13:30',hearing_num:'944249',style:'LVNV FUNDING LLC V DOUGLAS JONES',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'1122759',result:'Completed',fee:100,non_fee:null},
   {id:210,date:'2026-06-04',time:'13:30',hearing_num:'944489',style:'1st Franklin Financial v. Shenitha Christian',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'280231',result:'Completed',fee:125,non_fee:null},
   {id:211,date:'2026-06-04',time:'13:30',hearing_num:'946466',style:'American Express National Bank (1008) vs Kegan Pritchett',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'11-SM-2026-901245.00',result:'Completed',fee:125,non_fee:null},
-  {id:212,date:'2026-06-09',time:'08:20',hearing_num:'949315',style:'First National Bank of Omaha v. Daniel G Harris',setting:'In-Person',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'ALV-1130953487',result:'Completed',fee:125,non_fee:null},
+  {id:212,date:'2026-06-09',time:'08:20',hearing_num:'949315',style:'First National Bank of Omaha v. Daniel G Harris',setting:'In-Person',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'1130953487',result:'Completed',fee:125,non_fee:null},
   {id:213,date:'2026-06-09',time:'09:00',hearing_num:'944514',style:'Crown Asset Management v. Megan Davis',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'238429',result:'Completed',fee:125,non_fee:null},
   {id:214,date:'2026-06-09',time:'09:00',hearing_num:'943968',style:'SYNCHRONY BANK, VS. DEBORAH CUZZORT',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'1124191',result:'Completed',fee:235,non_fee:null},
   {id:215,date:'2026-06-09',time:'10:00',hearing_num:'948874',style:'AMERICAN EXPESS NATIONAL BANK V. MATTHEW HABEL',setting:'Hearing',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'5197522',result:'Completed',fee:125,non_fee:null},
@@ -1518,9 +1625,9 @@ let H = [
   {id:218,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware v. Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'5195098',result:'Completed',fee:150,non_fee:null},
   {id:219,date:'2026-06-15',time:'09:00',hearing_num:'945749',style:'Discover Bank vs. Tammy Sims',setting:'Bench Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'316367',result:'Cancelled',fee:0,non_fee:175},
   {id:220,date:'2026-06-16',time:'10:00',hearing_num:'945117',style:'Portfolio Recovery Associated LLC VS. Hannah N Grimes',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'238135',result:'Accepted',fee:150,non_fee:null},
-  {id:221,date:'2026-06-24',time:'10:00',hearing_num:'946904',style:'VELOCITY INVESTMENTS, LLC V. ROBIN BACHTEL',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'280078',result:'Accepted',fee:150,non_fee:null},
-  {id:222,date:'2026-06-25',time:'09:00',hearing_num:'946926',style:'CAPITAL ONE, MERGER DISCOVER BANK V. JENNIFER CO',setting:'MSJ',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'203311',result:'Accepted',fee:150,non_fee:null},
-  {id:223,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'5195027',result:'Accepted',fee:115,non_fee:null},
+  {id:221,date:'2026-06-24',time:'10:00',hearing_num:'946904',style:'VELOCITY INVESTMENTS, LLC V. ROBIN BACHTEL',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'280078',result:'Completed',fee:150,non_fee:null},
+  {id:222,date:'2026-06-25',time:'09:00',hearing_num:'946926',style:'CAPITAL ONE, MERGER DISCOVER BANK V. JENNIFER CO',setting:'MSJ',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'203311',result:'Completed',fee:150,non_fee:null},
+  {id:223,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'5195027',result:'Completed',fee:115,non_fee:null},
   {id:224,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v. Kelly Caldwell',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'5196268',result:'Accepted',fee:225,non_fee:null},
   {id:225,date:'2026-06-08',time:'09:00',hearing_num:'949040',style:'LVNV Funding LLC v. Robert Stanton',setting:'Hearing',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'CC-28434107',result:'Cancelled',fee:0,non_fee:150},
   {id:226,date:'2026-06-08',time:'09:00',hearing_num:'949055',style:'LVNV FUNDING, LLC V. ROBERT STANTON',setting:'Hearing',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'CC-28434102',result:'Completed',fee:150,non_fee:null},
@@ -1529,17 +1636,34 @@ let H = [
   {id:229,date:'2026-06-15',time:'09:00',hearing_num:'949563',style:'CREDIT CENTRAL V. TERRY MAGBY',setting:'Trial',location:'CHAMBERS COUNTY - LAYFATTE',client_ref:'PRO-32859',result:'Completed',fee:220,non_fee:null},
   {id:230,date:'2026-06-18',time:'09:00',hearing_num:'948185',style:'REPUBLIC FINANCE, LLC v. ?Jennifer Maddox',setting:'Bench Trial',location:'ST. CLAIR COUNTY - ASHVILLE',client_ref:'1049585',result:'Accepted',fee:150,non_fee:null},
   {id:231,date:'2026-06-18',time:'09:00',hearing_num:'948198',style:'American Express National Bank v. Rufus Carswell  Jr',setting:'Status Hearing',location:'ST. CLAIR COUNTY - ASHVILLE',client_ref:'1021880',result:'Accepted',fee:150,non_fee:null},
-  {id:232,date:'2026-06-22',time:'09:00',hearing_num:'949614',style:'LVNV Funding, LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'7718279',result:'Accepted',fee:150,non_fee:null},
+  {id:232,date:'2026-06-22',time:'09:00',hearing_num:'949614',style:'LVNV Funding, LLC v. Jason Griffaw',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'7718279',result:'Completed',fee:150,non_fee:null},
   {id:233,date:'2026-06-25',time:'09:00',hearing_num:'946942',style:'LVNV FUNDING, LLC V. SHELLEY DAVIDSON',setting:'Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'277936',result:'Accepted',fee:0,non_fee:150},
   {id:234,date:'2026-06-25',time:'09:00',hearing_num:'946950',style:'ONEMAIN FINANCIAL GROUP, LLC V. ANTHONY MERKLE',setting:'Trial',location:'MORGAN COUNTY - DECATUR',client_ref:'278033',result:'Accepted',fee:0,non_fee:150},
-  {id:235,date:'2026-06-29',time:'13:30',hearing_num:'950951',style:'Gulfco of AL, LLC DBA Tower Loan of Anniston v. Debbie Williams',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'PRO-39913',result:'Accepted',fee:175,non_fee:null},
-  {id:236,date:'2026-06-30',time:'09:00',hearing_num:'951101',style:'CREDIT ACCEPTANCE CORP VS. MATTHEW ANDERSON',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'918576',result:'Accepted',fee:225,non_fee:null},
+  {id:235,date:'2026-06-29',time:'13:30',hearing_num:'950951',style:'Gulfco of AL, LLC DBA Tower Loan of Anniston v. Debbie Williams',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'PRO-39913',result:'Completed',fee:175,non_fee:null},
+  {id:236,date:'2026-06-30',time:'09:00',hearing_num:'951101',style:'CREDIT ACCEPTANCE CORP VS. MATTHEW ANDERSON',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'918576',result:'Completed',fee:225,non_fee:null},
   {id:237,date:'2026-06-16',time:'10:00',hearing_num:'951335',style:'Republic Finance v. Ronika Johnson',setting:'Garnishment',location:'MORGAN COUNTY - DECATUR',client_ref:'251524',result:'Completed',fee:200,non_fee:null},
-  {id:238,date:'2026-06-22',time:'11:00',hearing_num:'950622',style:'Mariner Finance v Tabaitha D Hereford',setting:'Hearing',location:'MADISON COUNTY - HUNTSVILLE',client_ref:'5196828',result:'Accepted',fee:200,non_fee:null},
-  {id:239,date:'2026-06-22',time:'09:00',hearing_num:'951481',style:'Amex v. James Gullo',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'1148916229',result:'Accepted',fee:150,non_fee:null},
-  {id:240,date:'2026-06-18',time:'09:00',hearing_num:'947411',style:'Capital One, N.A. v. Jeffrey Westbrook',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:375,non_fee:null}
+  {id:238,date:'2026-06-22',time:'11:00',hearing_num:'950622',style:'Mariner Finance v Tabaitha D Hereford',setting:'Hearing',location:'MADISON COUNTY - HUNTSVILLE',client_ref:'5196828',result:'Completed',fee:200,non_fee:null},
+  {id:239,date:'2026-06-22',time:'09:00',hearing_num:'951481',style:'Amex v. James Gullo',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'1148916229',result:'Completed',fee:150,non_fee:null},
+  {id:240,date:'2026-06-18',time:'09:00',hearing_num:'947411',style:'Capital One, N.A. v. Jeffrey Westbrook',setting:'Small Claims',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'1255214',result:'Completed',fee:375,non_fee:null},
+  {id:241,date:'2026-06-23',time:'10:00',hearing_num:'952228',style:'Galaxy International Purchasing, LLC v. Dadron A. Ham',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'M-46064',result:'Completed',fee:150,non_fee:null},
+  {id:242,date:'2026-07-01',time:'10:00',hearing_num:'944983',style:'Lendmark Financial Services LLC v John Moffett',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'5194858',result:'Completed',fee:150,non_fee:null},
+  {id:243,date:'2026-07-06',time:'13:30',hearing_num:'952095',style:'Mariner Finance LLC v. Trenton Kemp',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'M-58999',result:'Completed',fee:125,non_fee:null},
+  {id:244,date:'2026-07-06',time:'13:30',hearing_num:'952102',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'276366',result:'Completed',fee:125,non_fee:null},
+  {id:245,date:'2026-07-06',time:'13:30',hearing_num:'952109',style:'Cavalry SPV I v. Jennifer Dobbins',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'278055',result:'Completed',fee:125,non_fee:null},
+  {id:246,date:'2026-07-09',time:'10:30',hearing_num:'955053',style:'AXIOM ACQ AS ASSIGNEE OF CROSS RIVER BANK v. Brittany King',setting:'Status Conference',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'840657',result:'Accepted',fee:0,non_fee:150},
+  {id:247,date:'2026-07-15',time:'10:00',hearing_num:'954715',style:'Jefferson Capital Systems LLC v. Codie Crawford',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'238767',result:'Accepted',fee:150,non_fee:null},
+  {id:248,date:'2026-07-15',time:'13:30',hearing_num:'954732',style:'LVNV Funding LLC v. Alicia H. Giardina',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'282982',result:'Accepted',fee:150,non_fee:null},
+  {id:249,date:'2026-07-21',time:'11:00',hearing_num:'952437',style:'1st Franklin Financial Corporation v. Ma Rodriguez',setting:'Small Claims',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'5198432',result:'Accepted',fee:150,non_fee:null},
+  {id:250,date:'2026-08-03',time:'09:00',hearing_num:'939227',style:'Lendmark Financial Services LLC v Teresa Kelley',setting:'Hearing',location:'CHEROKEE COUNTY - CENTRE',client_ref:'5195071',result:'Accepted',fee:220,non_fee:null},
+  {id:251,date:'2026-07-09',time:'13:25',hearing_num:'958642',style:'LVNV Funding LLC v. Lisa Nicklaus',setting:'Hearing',location:'MORGAN COUNTY - DECATUR',client_ref:'23899077',result:'Accepted',fee:200,non_fee:null},
+  {id:252,date:'2026-07-15',time:'13:30',hearing_num:' ',style:'Avadian Credit Union fka Alabama Telco vs. Alana M Day',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'952390',result:'Accepted',fee:100,non_fee:null},
+  {id:253,date:'2026-07-16',time:'13:30',hearing_num:'954744',style:'Velocity Investments LLC v. Christina Allen',setting:'Trial',location:'CLEBURNE COUNTY - HEFLIN',client_ref:'270352',result:'Accepted',fee:150,non_fee:null},
+  {id:254,date:'2026-07-16',time:'09:00',hearing_num:'957215',style:'FIRST NATIONAL BANK OF OMAHA V. ANTHONY P SMITH',setting:'Motion for CJ',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'895534',result:'Accepted',fee:150,non_fee:null},
+  {id:255,date:'2026-07-16',time:'09:00',hearing_num:'957469',style:'First Bank of Alabama vs Anthony Baxley',setting:'In-Person',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'1179516461',result:'Accepted',fee:125,non_fee:null},
+  {id:256,date:'2026-07-16',time:'13:30',hearing_num:'957640',style:'LVNV FUNDING, LLC V. MATTHEW BATROUNY',setting:'Bench Trial',location:'CLEBURNE COUNTY - HEFLIN',client_ref:'1007676',result:'Accepted',fee:150,non_fee:null},
+  {id:257,date:'2026-07-21',time:'11:00',hearing_num:'957052',style:'ONEMAIN FINANCIAL GROUP, LLC Vs Anne Marie A Desruisseau',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'279562',result:'Accepted',fee:150,non_fee:null}
 ];
-let nextId = 241;
+let nextId = 258;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPUTED CACHE — rebuilt once per data change, not per render
@@ -1564,12 +1688,28 @@ function rebuildCache() {
     });
   });
 
+  // Actual agreed-price history by courthouse and hearing-type group.
+  const agreed = {};
+  H.forEach(h => {
+    const status=(h.result||'').trim();
+    if(!h.location || !h.fee || !['Completed','Accepted'].includes(status)) return;
+    [h.location+'|'+priceGroup(h.setting),h.location+'|all'].forEach(key=>{
+      if(!agreed[key]) agreed[key]={sum:0,n:0};
+      agreed[key].sum+=Number(h.fee); agreed[key].n++;
+    });
+  });
+
   // Per-hearing derived values
   const derived = {};
   H.forEach(h => {
     const m = DIST[h.location] || 0;
     const rtMileage = m * 2 * MR;
-    const r = recFee(h.location, h.setting);
+    const exact=agreed[h.location+'|'+priceGroup(h.setting)];
+    const county=agreed[h.location+'|all'];
+    const chosen=exact&&exact.n>=2?exact:county&&county.n>=2?county:null;
+    const r=chosen?Math.round((chosen.sum/chosen.n)/5)*5:recFee(h.location,h.setting);
+    const marketN=chosen?chosen.n:0;
+    const marketScope=chosen===exact?'courthouse + type':chosen===county?'courthouse':'distance fallback';
     const k = h.date + '|' + h.location;
     const grp = bmap[k] || [];
     const bundleSize = grp.length;
@@ -1579,9 +1719,7 @@ function rebuildCache() {
     //   Lead hearing (#1):       full recFee — they called you to this courthouse, you bear the drive
     //   Additional hearings (+n): recFee at ZERO miles — you're already there, charge for time only
     let fair = r;
-    if (bundleSize > 1 && bundlePos > 0) {
-      fair = recFee('', h.setting); // zero-distance rate = appearance time only
-    }
+    // Historical averages already include the prices agreed for bundled work.
 
     const res = (h.result || '').trim();
     const f = h.fee || 0;
@@ -1589,11 +1727,11 @@ function rebuildCache() {
     let vrd;
     if (res === 'Cancelled') vrd = 'cancelled';
     else if (!hasFee) vrd = 'pending';
-    else if (f >= fair)        vrd = 'good';   // compare against FAIR (bundle-adjusted) rate
+    else if (f >= fair)        vrd = 'good';   // compare against actual agreed average
     else if (f >= fair * 0.8)  vrd = 'fair';
     else                       vrd = 'under';
 
-    derived[h.id] = { m, rtMileage, r, fair, bundleSize, bundlePos, bundleKey: k, vrd };
+    derived[h.id] = { m, rtMileage, r, fair, marketN, marketScope, bundleSize, bundlePos, bundleKey: k, vrd };
   });
 
   // Client firm extraction
@@ -1604,7 +1742,7 @@ function rebuildCache() {
     firms[firm].push(h.id);
   });
 
-  CACHE = { bmap, derived, firms };
+  CACHE = { bmap, derived, firms, agreed };
 }
 
 function d(id) { return CACHE.derived[id] || {}; }
@@ -1615,6 +1753,14 @@ function d(id) { return CACHE.derived[id] || {}; }
 const $ = id => document.getElementById(id);
 const fmt = v => (v == null || isNaN(v)) ? '—' : '$' + Number(v).toLocaleString();
 const fmtN = v => v == null ? '—' : Number(v).toLocaleString();
+
+function priceGroup(setting){
+  const s=(setting||'').toLowerCase();
+  if(s.includes('zoom')) return 'zoom';
+  if(s.includes('trial')||s.includes('bench')) return 'trial';
+  if(s.includes('status')||s.includes('conference')||s.includes('review')) return 'status';
+  return 'hearing';
+}
 
 function recFee(loc, setting) {
   const s = (setting || '').toLowerCase();
@@ -1757,10 +1903,29 @@ function renderPagBtns(container_id, pages, currentPg, onClick) {
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════════
 function init() {
+  initTheme();
+  loadHearings();
+  initModernNav();
   rebuildCache();
   initRates();
   populateSelects();
   renderAll();
+}
+
+function initTheme(){
+  let saved='day';
+  try{saved=localStorage.getItem('courtTracker.theme')||'day';}catch(e){}
+  applyTheme(saved==='night'?'night':'day');
+}
+function applyTheme(theme){
+  document.documentElement.dataset.theme=theme;
+  const b=$('theme-toggle');
+  if(b){const night=theme==='night';b.textContent=night?'☀️ Day':'🌙 Night';b.setAttribute('aria-label',night?'Switch to day mode':'Switch to night mode');b.setAttribute('aria-pressed',String(night));}
+}
+function toggleTheme(){
+  const next=document.documentElement.dataset.theme==='night'?'day':'night';
+  applyTheme(next);
+  try{localStorage.setItem('courtTracker.theme',next);}catch(e){}
 }
 
 function populateSelects() {
@@ -1855,15 +2020,17 @@ function renderDash() {
   $('d-monthly').innerHTML = Object.entries(mo).sort((a,b)=>a[0].localeCompare(b[0]))
     .map(([m,v]) => `<div class="irow"><div class="ilbl">${new Date(m+'-15').toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div><div class="ival">${v.n} · ${fmt(v.r)}</div></div>`).join('');
 
-  // Underpriced alert
+  // ── Dashboard alert cards ──────────────────────────────────────────────────
   const under = comp.filter(h => h.location && h.fee && d(h.id).vrd === 'under');
   const miss = under.reduce((s,h) => s + d(h.id).r - h.fee, 0);
-  // Underpriced alert only (role banner is static HTML above stats)
-  // ── Dashboard alert cards ───────────────────────────────────────────────────
-  // Compute bundle-impacted hearings count for dashboard badge
+
+  // Bundle-impacted: upcoming/accepted only — past hearings are done, nothing to reprice
   var bundleImpacted = 0, bundleShortage = 0;
+  var _n2 = new Date();
+  var _todayDash = _n2.getFullYear()+'-'+('0'+(_n2.getMonth()+1)).slice(-2)+'-'+('0'+_n2.getDate()).slice(-2);
   H.forEach(function(h) {
     if (!h.location || (h.result||'').trim()==='Cancelled' || !h.fee) return;
+    if (h.date < _todayDash || (h.result||'').trim()==='Completed') return;
     var allSameSlot = H.filter(function(x){ return x.date===h.date && x.location===h.location; });
     var hasCancelledPartner = allSameSlot.some(function(x){ return x.id!==h.id && (x.result||'').trim()==='Cancelled'; });
     if (!hasCancelledPartner) return;
@@ -1873,28 +2040,34 @@ function renderDash() {
 
   var alertHtml = '';
 
+  // Underpriced: compact info box
   if (under.length) {
-    alertHtml += '<div class="alert" style="cursor:pointer;text-decoration:none" onclick="goReprice()">' + '<span style="font-size:20px">💸</span>'
-      + '<span style="font-size:20px">💸</span>'
-      + '<div style="flex:1">'
-        + '<strong>' + under.length + ' underpriced hearing' + (under.length!==1?'s':'') + '</strong>'
-        + ' — charged below the recommended rate. Missed revenue: '
-        + '<strong style="color:var(--accent)">' + fmt(Math.round(miss)) + '</strong>.'
-        + ' <span style="color:var(--accent);font-size:11px">→ View in Repricing tab</span>'
+    alertHtml += '<div style="background:var(--s1);border:1px solid rgba(231,76,60,.25);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="goReprice()">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<span style="font-size:15px">💸</span>'
+        + '<div>'
+          + '<div style="font-size:12px;font-weight:700;color:#e74c3c">' + under.length + ' underpriced hearing' + (under.length!==1?'s':'') + '</div>'
+          + '<div style="font-size:11px;color:var(--muted)">Completed below recommended rate</div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+        + '<div style="font-family:monospace;font-size:15px;font-weight:700;color:#e74c3c">' + fmt(Math.round(miss)) + '</div>'
+        + '<div style="font-size:10px;color:var(--muted)">missed revenue</div>'
       + '</div>'
       + '</div>';
   }
 
+  // Bundle-impacted: only upcoming hearings
   if (bundleImpacted > 0) {
-    alertHtml += '<div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.4);border-radius:8px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer" onclick="goReprice()">' + '<span style="font-size:20px;flex-shrink:0">🔄</span>'
+    alertHtml += '<div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.4);border-radius:8px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer" onclick="goReprice()">'
       + '<span style="font-size:20px;flex-shrink:0">🔄</span>'
       + '<div style="flex:1">'
-        + '<strong style="color:#e8a838">' + bundleImpacted + ' bundle-impacted hearing' + (bundleImpacted!==1?'s':'') + ' need repricing</strong>'
+        + '<strong style="color:#e8a838">' + bundleImpacted + ' upcoming bundle-impacted hearing' + (bundleImpacted!==1?'s':'') + '</strong>'
         + '<div style="font-size:12px;color:var(--muted);margin-top:2px">'
-          + 'A cancelled bundle partner left ' + (bundleImpacted===1?'this hearing':'these hearings') + ' underpriced as solo appearance' + (bundleImpacted!==1?'s':'') + '. '
-          + 'Total increase needed: <strong style="color:#e8a838">+' + fmt(bundleShortage) + '</strong>.'
+          + 'Bundle partner cancelled — request repricing to solo rate. '
+          + 'Potential increase: <strong style="color:#e8a838">+' + fmt(bundleShortage) + '</strong>.'
         + '</div>'
-        + '<div style="font-size:11px;color:#e8a838;margin-top:4px">→ Click to view details and request amounts in Repricing tab</div>'
+        + '<div style="font-size:11px;color:#e8a838;margin-top:4px">→ View in Repricing tab</div>'
       + '</div>'
       + '</div>';
   }
@@ -2026,7 +2199,7 @@ function renderHearings() {
 
 function hRow(h) {
   const {m,r,fair,vrd,bundleSize} = d(h.id);
-  const gap = h.fee&&fair ? h.fee-fair : null; // use fair (bundle-adjusted) rate
+  const gap = h.fee&&fair ? h.fee-fair : null; // use actual agreed average
   const gapStr = gap!=null && vrd!=='cancelled' ? `<span style="color:${gap>=0?'var(--green)':'var(--red)'}; font-family:'IBM Plex Mono',monospace">${(gap>=0?'+':'')+fmt(gap)}</span>` : '<span style="color:var(--muted)">—</span>';
   const nfb = h.non_fee ? `<span class="nfb">${fmt(h.non_fee)}</span>` : '—';
   const bbadge = bundleSize>1 ? `<span class="chip chip-b" style="font-size:9px">${bundleSize}x</span>` : '';
@@ -2091,9 +2264,9 @@ function renderFairRate() {
   $('fr-stats').innerHTML=[
     {l:'Showing',v:frData.length,s:'hearings',c:''},
     {l:'Charged (Comp.)',v:fmt(totCharged),s:'Completed only',c:'g'},
-    {l:'Rec. Min Total',v:fmt(totRec),s:'If all at minimum',c:''},
-    {l:'Missed Revenue',v:fmt(Math.round(missed)),s:'Underpriced hearings',c:'r'},
-    {l:'Underpriced',v:underCount,s:'Below 70% of rec.',c:'r'},
+    {l:'Agreed Avg Total',v:fmt(totRec),s:'Historical market basis',c:''},
+    {l:'Below-Market Gap',v:fmt(Math.round(missed)),s:'Compared with agreed averages',c:'r'},
+    {l:'Below Average',v:underCount,s:'Below 80% of average',c:'r'},
   ].map(x=>`<div class="stat ${x.c}"><div class="stat-lbl">${x.l}</div><div class="stat-val">${x.v}</div><div class="stat-sub">${x.s}</div></div>`).join('');
 
   const {pg,pages}=paginate('fr-tb','fr-pi',frData,frPg,frRow);
@@ -2102,12 +2275,12 @@ function renderFairRate() {
 }
 
 function frRow(h) {
-  const {m,r,fair,bundleSize,bundlePos,vrd}=d(h.id);
+  const {m,r,fair,marketN,marketScope,bundleSize,bundlePos,vrd}=d(h.id);
   const f=h.fee||0;
-  const gap=f&&fair?f-fair:null; // gap vs FAIR (bundle-adjusted) rate
+  const gap=f&&fair?f-fair:null; // gap versus actual agreed average
   const gapVsRec=f&&r?f-r:null; // gap vs standard rec (shown as secondary)
   const gapStr=gap!=null&&vrd!=='cancelled'?`<span style="color:${gap>=0?'var(--green)':'var(--red)'}; font-family:'IBM Plex Mono',monospace">${(gap>=0?'+':'')+fmt(gap)}</span>`:'<span style="color:var(--muted)">—</span>';
-  const fairColor=bundleSize>1&&bundlePos>0?'var(--blue)':'var(--accent)';
+  const fairColor=marketN?'var(--accent)':'var(--muted)';
   const bLabel=bundleSize>1?`<span class="chip chip-b" style="font-size:9px">${bundlePos===0?'Lead':'+'+(bundlePos)} of ${bundleSize}</span>`:'<span style="color:var(--muted);font-size:11px">solo</span>';
   return `<tr>
     <td class="mono">${h.date}<br><span style="color:var(--muted);font-size:10px">${fmtTime12(h.time)}</span></td>
@@ -2118,9 +2291,9 @@ function frRow(h) {
     <td class="mono" style="color:var(--muted)">${m?m+' / '+m*2+' mi':'—'}</td>
     <td class="mono" style="color:var(--blue);font-size:11px">${getDriveMin(h.location)?formatTime(getDriveMin(h.location))+' / '+formatTime(getDriveMin(h.location)*2)+' RT':'—'}</td>
     <td>${feeCell(h)}</td>
-    <td class="mono" style="color:var(--muted)">${fmt(r)}</td>
+    <td class="mono" style="color:${fairColor}" title="${marketScope}; ${marketN||0} historical records">${fmt(r)}<br><span style="font-size:9px;color:var(--muted)">${marketN?marketN+' records':'fallback'}</span></td>
     <td style="font-family:'IBM Plex Mono',monospace;color:${fairColor};font-weight:500">${fmt(fair)}</td>
-    <td title="Gap vs fair bundle rate">${gapStr}</td>
+    <td title="Gap versus actual agreed average">${gapStr}</td>
     <td>${verdictChip(vrd)}</td>
     <td>${bLabel}</td>
   </tr>`;
@@ -2171,12 +2344,12 @@ function renderBundles() {
     $('b-pricing-alert').innerHTML=`<div class="alert" style="margin-bottom:14px;flex-direction:column;align-items:stretch">
       <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
         <span style="font-size:16px;flex-shrink:0">⚠️</span>
-        <div><strong>${bPricingIssues.length} bundled hearings are underpriced</strong> relative to their fair bundle rate. Estimated missed revenue: <strong style="color:var(--accent)">${fmt(Math.round(missed))}</strong>.</div>
+      <div><strong>${bPricingIssues.length} bundled hearings are below their courthouse average</strong>. Estimated difference from historical agreed pricing: <strong style="color:var(--accent)">${fmt(Math.round(missed))}</strong>.</div>
       </div>
       ${rows}${more}
     </div>`;
   } else if (allBundled.size > 0) {
-    $('b-pricing-alert').innerHTML='<div class="alert success" style="margin-bottom:14px"><span>✓</span><div>All completed bundled hearings are priced at or above their fair bundle rates.</div></div>';
+    $('b-pricing-alert').innerHTML='<div class="alert success" style="margin-bottom:14px"><span>✓</span><div>All completed bundled hearings are priced at or above their courthouse averages.</div></div>';
   }
 
   $('b-stats').innerHTML=[
@@ -2221,7 +2394,7 @@ function renderBundles() {
       <div style="overflow-x:auto"><table style="min-width:680px">
         <thead><tr>
           <th>TIME</th><th>HEARING #</th><th>CASE STYLE</th><th>TYPE</th>
-          <th>STATUS</th><th>CHARGED</th><th>REC. MIN</th><th>FAIR RATE</th><th>VERDICT</th>
+          <th>STATUS</th><th>CHARGED</th><th>AGREED AVG</th><th>ANALYSIS RATE</th><th>VERDICT</th>
         </tr></thead>
         <tbody>${hgs.map((h,i)=>{
           const {r,fair,vrd}=d(h.id);
@@ -2349,6 +2522,7 @@ function addHearing() {
     setting:$('a-setting').value,location:$('a-loc').value,client_ref:$('a-ref').value,
     result:$('a-result').value,fee:parseFloat($('a-fee').value)||null,non_fee:parseFloat($('a-nf').value)||null});
   H.sort((a,b)=>a.date.localeCompare(b.date));
+  saveHearings();
   rebuildCache();
   renderAll();
   addClr();
@@ -2383,7 +2557,7 @@ function openModal(id) {
   else if(hasFee&&diff>=0) statusNote='✓ Fee at or above recommended minimum.';
 
   const bundleNote = bundleSize>1
-    ? `${bundlePos===0?'Lead hearing (full rate)':'Additional hearing #'+(bundlePos+1)+' in bundle (reduced mileage share)'}. ${bundleSize} hearings share this trip to ${h.location}.`
+    ? `${bundlePos===0?'Lead hearing':'Additional hearing #'+(bundlePos+1)+' in bundle'}. ${bundleSize} hearings share this trip to ${h.location}; the analysis rate uses actual courthouse history.`
     : 'Solo hearing — full recommended rate applies.';
 
   $('m-title').textContent=`Hearing #${h.hearing_num}`;
@@ -2405,7 +2579,7 @@ function openModal(id) {
     ${r?`<div class="ibox" style="margin-top:12px">
       <div class="ibox-title">💡 Rate Analysis</div>
       <div class="i3">
-        <div><div class="i3-lbl">Rec. Min</div><div class="i3-val" style="color:var(--accent)">${fmt(r)}</div></div>
+        <div><div class="i3-lbl">Agreed Avg</div><div class="i3-val" style="color:var(--accent)">${fmt(r)}</div></div>
         <div><div class="i3-lbl">Fair Rate</div><div class="i3-val" style="color:var(--blue)">${fmt(fair)}</div></div>
         <div><div class="i3-lbl">Difference</div><div class="i3-val" style="font-size:18px">${diffHtml}</div></div>
       </div>
@@ -2423,22 +2597,37 @@ function closeModal(){$('modal').classList.remove('on');}
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════════════════════════════
 function parseCSVText(text) {
-  const lines = text.trim().split('\n').filter(l=>l.trim());
+  const lines = text.replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(l=>l.trim());
   if(!lines.length) return [];
-  const headers = lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/"/g,''));
+  const parseLine=line=>{const out=[];let cur='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cur+='"';i++;}else quoted=!quoted;}else if(ch===','&&!quoted){out.push(cur);cur='';}else cur+=ch;}out.push(cur);return out;};
+  const headers = parseLine(lines[0]).map(normalizeHeader);
   return lines.slice(1).map(line => {
-    const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || line.split(',');
+    const vals = parseLine(line);
     const obj={};
-    headers.forEach((h,i)=>{obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim();});
+    headers.forEach((h,i)=>{obj[h]=(vals[i]||'').trim();});
     return obj;
   });
 }
 
+function normalizeHeader(h){
+  const key=String(h||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  const aliases={provider:'provider',date_time:'date_time',datetime:'date_time',date:'date',time:'time',hearing:'hearing_num',hearing_:'hearing_num',hearing_number:'hearing_num',hearing_num:'hearing_num',style:'style',case_style:'style',setting:'setting',location:'location',client_ref:'client_ref',client_reference:'client_ref',result:'result',status:'result',fee:'fee',non_fee:'non_fee',nonfee:'non_fee'};
+  return aliases[key]||key;
+}
+
+function excelDateToParts(value){
+  if(value===null||value===undefined||value==='')return {date:'',time:'09:00'};
+  if(typeof value==='number'||/^\d{5}(\.\d+)?$/.test(String(value))){const n=Number(value),whole=Math.floor(n),frac=n-whole,dt=new Date(Date.UTC(1899,11,30)+whole*86400000),mins=Math.round(frac*1440);return {date:dt.toISOString().slice(0,10),time:String(Math.floor(mins/60)%24).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')};}
+  const s=String(value).trim(); if(/^\d{4}-\d{2}-\d{2}/.test(s))return {date:s.slice(0,10),time:(s.match(/(?:T|\s)(\d{1,2}:\d{2})/)||[])[1]||'09:00'};
+  const dt=new Date(s); return Number.isNaN(dt.getTime())?{date:s,time:'09:00'}:{date:dt.toISOString().slice(0,10),time:dt.toTimeString().slice(0,5)};
+}
+
 function csvRowToHearing(row) {
+  const dt=excelDateToParts(row.date_time||row.date||'');
   return {
     id: nextId++,
-    date: row.date||'',
-    time: row.time||'09:00',
+    date: dt.date,
+    time: row.time||dt.time||'09:00',
     hearing_num: row.hearing_num||row['hearing #']||'',
     style: row.style||'',
     setting: row.setting||'Hearing',
@@ -2467,16 +2656,17 @@ function importCSV() {
   const text = getCSVText();
   if(!text){$('import-msg').innerHTML='<span style="color:var(--red)">Nothing to import.</span>';return;}
   const rows = parseCSVText(text);
-  const existing = new Set(H.map(h=>String(h.hearing_num)));
+  const existing = new Set(H.map(h=>`${String(h.hearing_num).trim()}|${h.date}`));
   let added=0, skipped=0;
   rows.forEach(row=>{
-    const num=row.hearing_num||row['hearing #']||'';
-    if(num&&existing.has(String(num))){skipped++;return;}
     const h=csvRowToHearing(row);
+    const key=`${String(h.hearing_num).trim()}|${h.date}`;
+    if(h.hearing_num&&existing.has(key)){skipped++;return;}
     if(!h.date||!h.style){skipped++;return;}
-    H.push(h);added++;
+    H.push(h);existing.add(key);added++;
   });
   H.sort((a,b)=>a.date.localeCompare(b.date));
+  saveHearings();
   rebuildCache();
   renderAll();
   $('import-msg').innerHTML=`<span style="color:var(--green)">✓ Imported ${added} hearing${added!==1?'s':''}. ${skipped} skipped (duplicate or invalid).</span>`;
@@ -2491,14 +2681,18 @@ function dropFile(e){
 }
 function fileChosen(input){if(input.files[0])readFile(input.files[0]);}
 function readFile(file){
-  if(!file.name.endsWith('.csv')){$('import-msg').innerHTML='<span style="color:var(--red)">Only .csv files supported for drag-drop import.</span>';return;}
+  const lower=file.name.toLowerCase();
   const reader=new FileReader();
-  reader.onload=e=>{$('csv-paste').value=e.target.result;previewCSV();};
-  reader.readAsText(file);
+  if(lower.endsWith('.csv')){reader.onload=e=>{$('csv-paste').value=e.target.result;previewCSV();};reader.readAsText(file);return;}
+  if(lower.endsWith('.xlsx')||lower.endsWith('.xls')){
+    if(typeof XLSX==='undefined'){$('import-msg').innerHTML='<span style="color:var(--red)">Workbook import needs an internet connection to load the spreadsheet reader. Save the Hearings sheet as CSV UTF-8 and import that instead.</span>';return;}
+    reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:false});const name=wb.SheetNames.includes('Hearings')?'Hearings':wb.SheetNames[0];$('csv-paste').value=XLSX.utils.sheet_to_csv(wb.Sheets[name],{blankrows:false});previewCSV();$('import-msg').innerHTML='<span style="color:var(--green)">Workbook loaded. Review the preview, then select Import.</span>';}catch(err){$('import-msg').innerHTML='<span style="color:var(--red)">Could not read that workbook. Try saving the Hearings sheet as CSV UTF-8.</span>';}};reader.readAsArrayBuffer(file);return;
+  }
+  $('import-msg').innerHTML='<span style="color:var(--red)">Choose an Excel workbook or CSV file.</span>';
 }
 
 function toCSV(rows, headers) {
-  const escape=v=>typeof v==='string'&&v.includes(',')?`"${v}"`:v??'';
+  const escape=v=>{const s=String(v??'');return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
   return headers.join(',') + '\n' + rows.map(r=>headers.map(h=>escape(r[h])).join(',')).join('\n');
 }
 
@@ -2548,7 +2742,7 @@ function exportCSV(type){
 
 function clearAll(){
   if(!confirm('Delete all '+H.length+' hearings? This cannot be undone.')) return;
-  H=[]; nextId=1; rebuildCache(); renderAll();
+  H=[]; nextId=1; saveHearings(); rebuildCache(); renderAll();
   $('import-msg').innerHTML='<span style="color:var(--accent)">All data cleared.</span>';
 }
 
@@ -3179,12 +3373,28 @@ function qqUpdate() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════════════════════════════════════════
-const TAB_ORDER = ['dash','hearings','fairrate','bundles','clients','calendar','time','rates','add','import','tripcalc','counties','reprice','catchup'];
+const PRIMARY_TABS = ['dash','hearings','add','calendar','tripcalc','import'];
+const MORE_TABS = ['fairrate','rates','reprice','catchup','pricing','value','bundles','clients','time','counties'];
+const TAB_ORDER = [...PRIMARY_TABS,...MORE_TABS];
+const TAB_LABELS = {dash:'Dashboard',hearings:'Hearings',fairrate:'Fair Rates',bundles:'Bundles',clients:'Creditors',add:'Add Hearing',calendar:'Calendar',time:'Time Analysis',rates:'Rate Card',import:'Import / Export',tripcalc:'Trip Calculator',counties:'Alabama Counties',reprice:'Repricing',catchup:'Rate Catch-Up',pricing:'Hearing Pricing',value:'Value Analysis'};
+function initModernNav(){
+  document.querySelectorAll('.tab').forEach(el=>{const match=(el.getAttribute('onclick')||'').match(/go\('([^']+)'\)/);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.dataset.tab=match?match[1]:'';el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});});
+  const sel=$('mobile-tab-select'); if(!sel) return;
+  PRIMARY_TABS.forEach(t=>{if(!$('panel-'+t))return;const o=document.createElement('option');o.value=t;o.textContent=TAB_LABELS[t]||t;sel.appendChild(o);});
+  const advanced=document.createElement('optgroup');advanced.label='More tools';MORE_TABS.forEach(t=>{if(!$('panel-'+t))return;const o=document.createElement('option');o.value=t;o.textContent=TAB_LABELS[t]||t;advanced.appendChild(o);});sel.appendChild(advanced);
+  sel.addEventListener('change',()=>go(sel.value));
+  const more=$('more-tools-select');if(more)more.addEventListener('change',()=>{if(more.value)go(more.value);});
+}
+function saveHearings(){try{localStorage.setItem('courtTracker.hearings.v2',JSON.stringify(H));localStorage.setItem('courtTracker.nextId.v2',String(nextId));}catch(e){console.warn('Could not save hearings',e);}}
+function loadHearings(){try{const raw=localStorage.getItem('courtTracker.hearings.v2');if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed))H=parsed;}const n=parseInt(localStorage.getItem('courtTracker.nextId.v2'),10);nextId=Number.isFinite(n)?n:Math.max(0,...H.map(h=>Number(h.id)||0))+1;}catch(e){console.warn('Could not load saved hearings',e);}}
+
 
 function go(name){
-  TAB_ORDER.forEach((t,i)=>{
-    document.querySelectorAll('.tab')[i]?.classList.toggle('on', t===name);
+  document.querySelectorAll('.tab').forEach(el=>{
+    const active=el.dataset.tab===name; el.classList.toggle('on',active); el.setAttribute('aria-current',active?'page':'false');
   });
+  const mobileSel=$('mobile-tab-select'); if(mobileSel) mobileSel.value=name;
+  const moreSel=$('more-tools-select'); if(moreSel) moreSel.value=MORE_TABS.includes(name)?name:'';
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   const el=$('panel-'+name);
   if(el) el.classList.add('on');
@@ -4024,26 +4234,25 @@ var AL_COUNTIES = [
   ['WASHINGTON', 'Chatom',             264, 247, 'WASHINGTON COUNTY - CHATOM',        'CST'],
   ['WILCOX',     'Camden',             169, 160, 'WILCOX COUNTY - CAMDEN',            'CST'],
   ['WINSTON',    'Double Springs',      57,  71, 'WINSTON COUNTY - DOUBLE SPRINGS',   'CST'],,
-  {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'OneMain Financial Group LLC vs Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:175,non_fee:null},
-  {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC vs Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:100,non_fee:null},
-  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware vs Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null
-},
-  {id:181,date:'2026-05-05',time:'09:00',hearing_num:'932929',style:'Bank of America v. Donald Winchester',setting:'Bench Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Cancelled',fee:0,non_fee:150},
-  {id:182,date:'2026-05-05',time:'09:00',hearing_num:'932933',style:'LVNV Funding v. Terry Manning',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'',result:'Completed',fee:235,non_fee:null},
-  {id:184,date:'2026-05-06',time:'09:00',hearing_num:'920946',style:'Republic Finance LLC v. Chiquera M Cox',setting:'Hearing',location:'ETOWAH COUNTY - GADSDEN',client_ref:'',result:'Cancelled',fee:0,non_fee:125},
-  {id:185,date:'2026-05-11',time:'10:00',hearing_num:'935839',style:'1st Franklin Financial Corp. v. Cherlyn McVay',setting:'Bench Trial',location:'TUSCALOOSA COUNTY - TUSCALOOSA',client_ref:'',result:'Accepted',fee:225,non_fee:null},
-  {id:186,date:'2026-05-14',time:'09:00',hearing_num:'936203',style:'Capital One, N.A. v. Charles R. Huckabee',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'',result:'Accepted',fee:225,non_fee:null},
-  {id:189,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v Kelly Caldwell',setting:'Trial',location:'',client_ref:'',result:'Accepted',fee:225,non_fee:null},
-  {id:190,date:'2026-05-04',time:'09:00',hearing_num:'936879',style:'American Express v. Matthew Dodson aka Matthew J Dodson',setting:'Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
-  {id:191,date:'2026-05-04',time:'09:00',hearing_num:'936871',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'',result:'Completed',fee:135,non_fee:null},
-  {id:192,date:'2026-05-07',time:'13:30',hearing_num:'936863',style:'Cavalry SPV I v. Jennifer Dobbins',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'',result:'Completed',fee:165,non_fee:null},
-  {id:193,date:'2026-05-13',time:'10:00',hearing_num:'938629',style:'Citibank N.A v. Davin Moore',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:165,non_fee:null},
-  {id:194,date:'2026-05-19',time:'10:00',hearing_num:'938022',style:'Jefferson Capital Systems v. Melanie Authement',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:195,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'',result:'Accepted',fee:115,non_fee:null},
-  {id:196,date:'2026-05-12',time:'09:00',hearing_num:'938063',style:'Capital One, N.A., Merger to Discover Bank v Jose Rivera',setting:'Bench Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:197,date:'2026-05-18',time:'09:00',hearing_num:'940503',style:'LVNV Funding, LLC v Barbara Shea',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'',result:'Accepted',fee:150,non_fee:null},
-  {id:198,date:'2026-05-26',time:'11:00',hearing_num:'939985',style:'CITIBANK, N.A. vs Glenn Kunis',setting:'Zoom',location:'DALE COUNTY - OZARK',client_ref:'',result:'Accepted',fee:100,non_fee:null},
-  {id:199,date:'2026-05-27',time:'09:00',hearing_num:'939417',style:'AMEX vs Charles Hyde',setting:'Zoom',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'',result:'Accepted',fee:100,non_fee:null}];
+  {id:177,date:'2026-05-04',time:'13:30',hearing_num:'932800',style:'Onemain Financial Group LLC v. Joshua Dobbins',setting:'Hearing',location:'CALHOUN COUNTY - ANNISTON',client_ref:'276366',result:'Completed',fee:175,non_fee:null},
+  {id:178,date:'2026-05-04',time:'13:30',hearing_num:'934097',style:'LVNV Funding LLC, LLC v. Alida Hill',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'7500913',result:'Completed',fee:100,non_fee:null},
+  {id:179,date:'2026-06-11',time:'10:00',hearing_num:'934449',style:'Barclays Bank Delaware v. Brittney Thrasher',setting:'Hearing',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'5195098',result:'Completed',fee:150,non_fee:null},
+  {id:181,date:'2026-05-05',time:'09:00',hearing_num:'932929',style:'Bank of America v. Donald Winchester',setting:'Bench Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'274911',result:'Cancelled',fee:0,non_fee:150},
+  {id:182,date:'2026-05-05',time:'09:00',hearing_num:'932933',style:'LVNV Funding v. Terry Manning',setting:'Trial',location:'DEKLAB COUNTY - FT PAYNE',client_ref:'276141',result:'Completed',fee:235,non_fee:null},
+  {id:184,date:'2026-05-06',time:'09:00',hearing_num:'920946',style:'Republic Finance LLC v. Chiquera M Cox',setting:'Hearing',location:'ETOWAH COUNTY - GADSDEN',client_ref:'5196223',result:'Cancelled',fee:0,non_fee:125},
+  {id:185,date:'2026-05-11',time:'10:00',hearing_num:'935839',style:'1st Franklin Financial Corp. v. Cherlyn McVay',setting:'Bench Trial',location:'TUSCALOOSA COUNTY - TUSCALOOSA',client_ref:'1081995',result:'Cancelled',fee:0,non_fee:225},
+  {id:186,date:'2026-05-14',time:'09:00',hearing_num:'936203',style:'Capital One, N.A. v. Charles R. Huckabee',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'M-42894',result:'Completed',fee:225,non_fee:null},
+  {id:189,date:'2026-07-16',time:'09:00',hearing_num:'936083',style:'Bank Of America v. Kelly Caldwell',setting:'Trial',location:'RANDOLPH COUNTY - WEDOWEE',client_ref:'5196268',result:'Accepted',fee:225,non_fee:null},
+  {id:190,date:'2026-05-04',time:'09:00',hearing_num:'936879',style:'American Express v. Matthew Dodson aka Matthew J Dodson',setting:'Trial',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'PRO-32818',result:'Completed',fee:135,non_fee:null},
+  {id:191,date:'2026-05-04',time:'09:00',hearing_num:'936871',style:'Discover Bank v. Matthew J Dodson',setting:'Hearing',location:'ST. CLAIR COUNTY - PELL CITY',client_ref:'PRO-32818',result:'Completed',fee:135,non_fee:null},
+  {id:192,date:'2026-05-07',time:'13:30',hearing_num:'936863',style:'Cavalry SPV I v. Jennifer Dobbins',setting:'Trial',location:'CALHOUN COUNTY - ANNISTON',client_ref:'278055',result:'Completed',fee:165,non_fee:null},
+  {id:193,date:'2026-05-13',time:'10:00',hearing_num:'938629',style:'Citibank N.A v. Davin Moore',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'PRO-35658',result:'Completed',fee:165,non_fee:null},
+  {id:194,date:'2026-05-19',time:'10:00',hearing_num:'938022',style:'Jefferson Capital Systems v. Melanie Authement',setting:'Trial',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'277090',result:'Cancelled',fee:0,non_fee:150},
+  {id:195,date:'2026-07-02',time:'09:30',hearing_num:'938732',style:'Capital One v. Max Hilburn',setting:'Hearing',location:'BLOUNT COUNTY - ONEONTA',client_ref:'5195027',result:'Completed',fee:115,non_fee:null},
+  {id:196,date:'2026-05-12',time:'09:00',hearing_num:'938063',style:'Capital One, N.A.,  Merger to Discover Bank v Jose Rivera',setting:'Bench Trial',location:'BLOUNT COUNTY - ONEONTA',client_ref:'1037795',result:'Completed',fee:150,non_fee:null},
+  {id:197,date:'2026-05-18',time:'09:00',hearing_num:'940503',style:'LVNV Funding, LLC v Barbara Shea',setting:'Bench Trial',location:'MARSHALL COUNTY - GUNTERSVILLE',client_ref:'828188',result:'Completed',fee:150,non_fee:null},
+  {id:198,date:'2026-05-26',time:'11:00',hearing_num:'939985',style:'CITIBANK, N.A. vs Glenn Kunis',setting:'Zoom - M Sum Judgment',location:'DALE COUNTY - OZARK',client_ref:'241973',result:'Cancelled',fee:0,non_fee:100},
+  {id:199,date:'2026-05-27',time:'09:00',hearing_num:'939417',style:'AMEX vs Charles Hyde',setting:'Zoom',location:'JEFFERSON COUNTY - BIRMINGHAM',client_ref:'267236',result:'Cancelled',fee:0,non_fee:100}];
 
 function renderCounties() {
   var q       = ($('cty-q')||{value:''}).value.toLowerCase();
@@ -4200,6 +4409,8 @@ setInterval(updateClock, 1000);
 
 function buildRepriceData() {
   var underpriced = [], bundleImpacted = [];
+  var _n = new Date();
+  var todayStr = _n.getFullYear()+'-'+('0'+(_n.getMonth()+1)).slice(-2)+'-'+('0'+_n.getDate()).slice(-2);
 
   H.forEach(function(h) {
     if (!h.location) return;
@@ -4210,29 +4421,33 @@ function buildRepriceData() {
     var soloRec = recFee(h.location, h.setting);
     var currentFee = h.fee;
 
-    // ── Check for bundle-cancelled partners ────────────────────────────────
-    var allSameSlot = H.filter(function(x){ return x.date===h.date && x.location===h.location; });
-    var cancelledPartners = allSameSlot.filter(function(x){
-      return x.id !== h.id && (x.result||'').trim() === 'Cancelled';
-    });
-    var hasBundleIssue = cancelledPartners.length > 0 && currentFee < soloRec * 0.85;
-
-    if (hasBundleIssue) {
-      var cancelledNames = cancelledPartners.map(function(x){
-        var s = x.style||'';
-        var vs = s.indexOf(' v. '); var vl2=4; if(vs<0){vs=s.indexOf(' vs. ');vl2=5;}
-        return vs>=0 ? s.substring(vs+vl2).trim() : s;
-      }).join(', ');
-      bundleImpacted.push({
-        id:h.id, style:h.style, date:h.date, location:h.location,
-        setting:h.setting, result:h.result, num:h.hearing_num,
-        currentFee:currentFee, soloRec:soloRec, shortage:soloRec-currentFee,
-        cancelledNames:cancelledNames, type:'bundle'
+    // ── Check for bundle-cancelled partners — UPCOMING ONLY ────────────────
+    // Only show bundle issues for hearings that haven't happened yet
+    var isUpcoming = h.date >= todayStr && (h.result||'').trim() !== 'Completed';
+    if (isUpcoming) {
+      var allSameSlot = H.filter(function(x){ return x.date===h.date && x.location===h.location; });
+      var cancelledPartners = allSameSlot.filter(function(x){
+        return x.id !== h.id && (x.result||'').trim() === 'Cancelled';
       });
+      var hasBundleIssue = cancelledPartners.length > 0 && currentFee < soloRec * 0.85;
+
+      if (hasBundleIssue) {
+        var cancelledNames = cancelledPartners.map(function(x){
+          var s = x.style||'';
+          var vs = s.indexOf(' v. '); var vl2=4; if(vs<0){vs=s.indexOf(' vs. ');vl2=5;}
+          return vs>=0 ? s.substring(vs+vl2).trim() : s;
+        }).join(', ');
+        bundleImpacted.push({
+          id:h.id, style:h.style, date:h.date, location:h.location,
+          setting:h.setting, result:h.result, num:h.hearing_num,
+          currentFee:currentFee, soloRec:soloRec, shortage:soloRec-currentFee,
+          cancelledNames:cancelledNames, type:'bundle'
+        });
+      }
     }
 
-    // ── Check for general underpricing (completed, not bundle issue) ───────
-    if (!hasBundleIssue && dd.vrd === 'under') {
+    // ── Check for general underpricing (completed hearings only) ──────────
+    if (h.result === 'Completed' && dd.vrd === 'under') {
       underpriced.push({
         id:h.id, style:h.style, date:h.date, location:h.location,
         setting:h.setting, result:h.result, num:h.hearing_num,

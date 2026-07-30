@@ -287,6 +287,22 @@ tbody tr:hover{background:rgba(96,165,250,.055)}
 @media(max-width:420px){.fbar{grid-template-columns:1fr}.fbar>*{grid-column:1!important}.stat-row{grid-template-columns:1fr!important}.main{padding-inline:8px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+
+/* Assignment-side and dispatch routing enhancements */
+.provider-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid var(--bd);white-space:nowrap}
+.provider-aod{color:var(--accent);background:rgba(232,168,56,.09);border-color:rgba(232,168,56,.35)}
+.provider-defense{color:var(--blue);background:rgba(70,145,255,.09);border-color:rgba(70,145,255,.35)}
+.route-action{min-width:36px;min-height:32px;padding:5px 8px!important}
+.dispatch-day{border:1px solid var(--bd);border-radius:10px;background:var(--s1);margin-bottom:9px;overflow:hidden}
+.dispatch-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);flex-wrap:wrap}
+.dispatch-stops{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0}
+.dispatch-stop{padding:10px 12px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;min-width:0}
+.dispatch-stop .stop-num{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-size:11px;font-weight:800;flex-shrink:0}
+.dispatch-stop .stop-info{min-width:0;flex:1}
+.dispatch-stop .stop-court{font-size:12px;font-weight:650;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dispatch-stop .stop-meta{font-size:10px;color:var(--muted);margin-top:2px}
+@media(max-width:760px){.dispatch-stops{grid-template-columns:1fr}.dispatch-head .btn{flex:1}.provider-chip{font-size:9px}.route-action{min-width:42px;min-height:38px}}
+
 </style>
 
 <style id="refined-ui-20260730">
@@ -425,7 +441,7 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
   <div class="tab" onclick="go('hearings')">📋 Hearings</div>
   <div class="tab" onclick="go('fairrate')">💰 Fair Rates</div>
   <div class="tab" onclick="go('bundles')">📦 Bundles</div>
-  <div class="tab" onclick="go('clients')">⚖ Creditors</div>
+  <div class="tab" onclick="go('clients')">⚖ Parties</div>
   <div class="tab" onclick="go('add')">➕ Add</div>
   <div class="tab" onclick="go('calendar')">📅 Calendar</div>
   <div class="tab" onclick="go('drive')">🚘 Drive Mode</div>
@@ -446,12 +462,12 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
 <!-- ══ DASHBOARD ══ -->
 <div class="panel on" id="panel-dash">
   <div class="alert success" style="justify-content:space-between;align-items:center;gap:12px">
-    <div><strong>Spreadsheet synchronized:</strong> 287 records loaded from the latest docket, including revised hearing numbers and 24 accepted/upcoming matters.</div>
+    <div><strong>Assignment roles updated:</strong> 287 records loaded from the latest docket, with provider-specific represented-side labels and dispatch-style Google Maps routing.</div>
     <span class="chip chip-g" style="white-space:nowrap">Updated Jul 30, 2026</span>
   </div>
   <div style="background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:10px">
     <span style="font-size:18px;flex-shrink:0">⚖️</span>
-    <div>You appear as <strong style="color:var(--text)">local counsel for defendants</strong> in debt collection cases, contracted through <strong style="color:var(--text)">Nationwide Appearance Attorneys</strong>. Creditors listed (LVNV, Capital One, Bank of America, etc.) are the opposing plaintiffs.</div>
+    <div>You handle appearances for <strong style="color:var(--text)">both sides of collection matters</strong>. <strong style="color:var(--accent)">Attorneys on Demand (AOD)</strong> assignments are for plaintiffs/creditors. <strong style="color:var(--blue)">ThisAppearance</strong> and <strong style="color:var(--blue)">Nationwide Appearance Attorneys</strong> assignments are for defendants/debtors.</div>
   </div>
   <div class="stat-row" id="dash-stats"></div>
   <div id="dash-alert"></div>
@@ -461,17 +477,29 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
     <div class="ic" id="dash-today-panel">
       <div class="ic-title" style="display:flex;align-items:center;justify-content:space-between">
         <span>📅 Today's Hearings</span>
-        <span id="dash-today-date" style="font-size:11px;color:var(--muted);font-weight:400"></span>
+        <span style="display:flex;align-items:center;gap:7px"><button class="btn ghost sm" onclick="dashOpenRoute(dashLocalISO(0))" title="Open today’s courthouse route in Google Maps">🗺 Route</button><span id="dash-today-date" style="font-size:11px;color:var(--muted);font-weight:400"></span></span>
       </div>
       <div id="dash-today-list"></div>
     </div>
     <div class="ic" id="dash-tomorrow-panel">
       <div class="ic-title" style="display:flex;align-items:center;justify-content:space-between">
         <span>🗓 Tomorrow's Hearings</span>
-        <span id="dash-tomorrow-date" style="font-size:11px;color:var(--muted);font-weight:400"></span>
+        <span style="display:flex;align-items:center;gap:7px"><button class="btn ghost sm" onclick="dashOpenRoute(dashLocalISO(1))" title="Open tomorrow’s courthouse route in Google Maps">🗺 Route</button><span id="dash-tomorrow-date" style="font-size:11px;color:var(--muted);font-weight:400"></span></span>
       </div>
       <div id="dash-tomorrow-list"></div>
     </div>
+  </div>
+
+  <div class="card dispatch-board" style="margin-bottom:14px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span>🚚 Upcoming Route Dispatch</span>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="go('drive')">Open Drive Mode</button>
+        <button class="btn sm" onclick="dashOpenNextRoute()">Route Next Court Day</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Upcoming court days are grouped like delivery stops. Open an entire day in Google Maps or navigate to an individual courthouse.</div>
+    <div id="dash-route-board"></div>
   </div>
 
   <div class="ig">
@@ -510,7 +538,7 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
       <th>Non-Fee</th>
       <th onclick="hSrt('rec')">Rec. Min</th>
       <th onclick="hSrt('gap')">Gap vs Fair</th>
-      <th>Defendant</th>
+      <th>Represented Party</th>
       <th onclick="hSrt('result')">Status</th>
       <th></th>
     </tr></thead>
@@ -524,7 +552,7 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
   <div class="card">
     <div class="card-title">💰 Fair Rate Analysis — All Hearings</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-      Every hearing is assessed against a <strong style="color:var(--accent)">recommended minimum fee</strong> based on driving distance from your Oneonta office. You appear as <strong>local defense counsel</strong> in each case, contracted by Nationwide Appearance Attorneys. Bundled hearings (same day, same county) get a reduced <strong style="color:var(--blue)">bundle fair rate</strong> since mileage is shared across the trip.
+      Every hearing is assessed against a <strong style="color:var(--accent)">recommended minimum fee</strong> based on driving distance from your Oneonta office. The represented side is determined by the assignment provider: AOD matters are plaintiff/creditor appearances; ThisAppearance and Nationwide matters are defendant/debtor appearances. Bundled hearings (same day, same county) get a reduced <strong style="color:var(--blue)">bundle fair rate</strong> since mileage is shared across the trip.
     </div>
     <div class="stat-row" id="fr-stats" style="grid-template-columns:repeat(5,1fr)"></div>
   </div>
@@ -580,9 +608,9 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
 <!-- ══ CLIENT FIRMS ══ -->
 <div class="panel" id="panel-clients">
   <div class="card">
-    <div class="card-title">⚖ Creditor Analysis <span style="font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:var(--muted);font-weight:400">(Opposing Plaintiffs)</span></div>
+    <div class="card-title">⚖ Party & Assignment Analysis <span style="font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:var(--muted);font-weight:400">(Both sides)</span></div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-      Hearings grouped by the <strong>creditor / plaintiff firm</strong> (the suing party). You appear on behalf of the <strong style="color:var(--accent)">defendant</strong> in each case, contracted through <strong>Nationwide Appearance Attorneys</strong>. This view shows which creditors are generating the most work, and whether you're pricing appropriately for each.
+      Matters are grouped by the named creditor/plaintiff while each record separately identifies the assignment company and the side you represent. AOD matters are plaintiff/creditor appearances; ThisAppearance and Nationwide matters are defendant/debtor appearances.
     </div>
   </div>
   <div id="cl-list"></div>
@@ -596,6 +624,7 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
       <div class="fg"><label>Date & Time</label><input type="datetime-local" id="a-dt"></div>
       <div class="fg"><label>Hearing #</label><input type="text" id="a-num" placeholder="e.g. 928001"></div>
       <div class="fg"><label>Client Ref #</label><input type="text" id="a-ref"></div>
+      <div class="fg"><label>Assignment Company</label><select id="a-provider"><option value="Nationwide">Nationwide Appearance Attorneys</option><option value="ThisAppearance">ThisAppearance</option><option value="AOD">Attorneys on Demand (AOD)</option></select></div>
       <div class="fg" style="grid-column:span 3"><label>Case Style</label><input type="text" id="a-style" placeholder="Plaintiff v. Defendant"></div>
       <div class="fg"><label>Hearing Type</label>
         <select id="a-setting">
@@ -631,7 +660,7 @@ tbody tr:hover{background:rgba(104,173,255,.065)}
     <div class="card">
       <div class="card-title">📥 Import Hearings from CSV</div>
       <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-        Upload or paste a CSV with columns: <code style="font-family:'IBM Plex Mono',monospace;background:var(--s2);padding:1px 5px;border-radius:3px">date, time, hearing_num, style, setting, location, client_ref, result, fee, non_fee</code>. New rows are merged by hearing number — duplicates are skipped.
+        Upload or paste a CSV with columns: <code style="font-family:'IBM Plex Mono',monospace;background:var(--s2);padding:1px 5px;border-radius:3px">provider, date, time, hearing_num, style, setting, location, client_ref, result, fee, non_fee</code>. New rows are merged by hearing number — duplicates are skipped.
       </div>
       <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()" ondragover="dropOver(event)" ondrop="dropFile(event)" ondragleave="this.classList.remove('drag')">
         <input type="file" id="csv-file" accept=".csv,.xlsx" onchange="fileChosen(this)">
@@ -1826,6 +1855,58 @@ function updateHeader() {
   $('hb4').textContent = fmtN(H.reduce((s, h) => s + (DIST[h.location] || 0) * 2, 0));
 }
 
+
+// Assignment-company and represented-side helpers
+function providerKey(h){
+  var p=((h&&h.provider)||'Nationwide').toString().trim().toLowerCase();
+  if(p==='aod'||p.indexOf('attorneys on demand')>=0)return 'AOD';
+  if(p.indexOf('thisappearance')>=0||p.indexOf('this appearance')>=0)return 'ThisAppearance';
+  return 'Nationwide';
+}
+function providerName(h){
+  var p=providerKey(h);
+  return p==='AOD'?'Attorneys on Demand (AOD)':p==='ThisAppearance'?'ThisAppearance':'Nationwide Appearance Attorneys';
+}
+function representedSide(h){return providerKey(h)==='AOD'?'Plaintiff / Creditor':'Defendant / Debtor';}
+function partyParts(style){
+  var s=(style||'').trim(), patterns=[' v. ',' vs. ',' vs ',' V. ',' VS. ',' v ',' V ','-'];
+  for(var i=0;i<patterns.length;i++){
+    var at=s.indexOf(patterns[i]);
+    if(at>0)return {plaintiff:s.substring(0,at).trim(),defendant:s.substring(at+patterns[i].length).trim()};
+  }
+  return {plaintiff:s,defendant:''};
+}
+function representedParty(h){var p=partyParts(h&&h.style);return providerKey(h)==='AOD'?(p.plaintiff||'Plaintiff / Creditor'):(p.defendant||'Defendant / Debtor');}
+function opposingParty(h){var p=partyParts(h&&h.style);return providerKey(h)==='AOD'?(p.defendant||'Defendant / Debtor'):(p.plaintiff||'Plaintiff / Creditor');}
+function providerChip(h){var a=providerKey(h)==='AOD';return '<span class="provider-chip '+(a?'provider-aod':'provider-defense')+'">'+(a?'P/C':'D/D')+' · '+esc(providerKey(h))+'</span>';}
+
+// Dashboard dispatch routing
+function dashLocalISO(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dashDayHearings(date){return H.filter(function(h){return h.date===date&&h.location&&(h.result||'').trim()!=='Cancelled'&&(h.result||'').trim()!=='Completed';}).sort(function(a,b){return (a.time||'23:59').localeCompare(b.time||'23:59');});}
+function dashOpenHearing(id){var h=H.find(function(x){return x.id===id;});if(!h||!h.location){alert('No courthouse location is entered for this hearing.');return;}window.open(driveMapsURL(driveCourtQuery(h.location),'Current Location'),'_blank','noopener');}
+function dashOpenRoute(date){
+  var list=dashDayHearings(date);if(!list.length){alert('No active hearings with courthouse locations on this date.');return;}
+  var seen={},stops=[];list.forEach(function(h){var q=driveCourtQuery(h.location);if(!seen[q]){seen[q]=1;stops.push(q);}});
+  var dest=stops.pop(),url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent('Current Location')+'&destination='+encodeURIComponent(dest);
+  if(stops.length)url+='&waypoints='+encodeURIComponent(stops.join('|'));
+  window.open(url,'_blank','noopener');
+}
+function dashOpenNextRoute(){var today=dashLocalISO(0),dates=Array.from(new Set(H.filter(function(h){return h.date>=today&&h.location&&(h.result||'').trim()!=='Cancelled'&&(h.result||'').trim()!=='Completed';}).map(function(h){return h.date;}))).sort();if(!dates.length){alert('No upcoming court days found.');return;}dashOpenRoute(dates[0]);}
+function renderDispatchBoard(){
+  var el=$('dash-route-board');if(!el)return;
+  var today=dashLocalISO(0), active=H.filter(function(h){return h.date>=today&&h.location&&(h.result||'').trim()!=='Cancelled'&&(h.result||'').trim()!=='Completed';});
+  var groups={};active.forEach(function(h){(groups[h.date]||(groups[h.date]=[])).push(h);});
+  var dates=Object.keys(groups).sort().slice(0,8);
+  if(!dates.length){el.innerHTML='<div style="padding:12px;color:var(--muted);text-align:center">No upcoming active hearings with courthouse locations.</div>';return;}
+  el.innerHTML=dates.map(function(date){
+    var list=groups[date].sort(function(a,b){return (a.time||'23:59').localeCompare(b.time||'23:59');}), courts=[],seen={};
+    list.forEach(function(h){if(!seen[h.location]){seen[h.location]=1;courts.push(h.location);}});
+    var label=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var stops=courts.map(function(loc,i){var hs=list.filter(function(h){return h.location===loc;}), first=hs[0];return '<div class="dispatch-stop"><span class="stop-num">'+(i+1)+'</span><div class="stop-info"><div class="stop-court">'+esc(loc)+'</div><div class="stop-meta">'+fmtTime12(first.time)+' · '+hs.length+' hearing'+(hs.length===1?'':'s')+' · '+esc(providerKey(first))+'</div></div><button class="btn ghost sm route-action" onclick="dashOpenHearing('+first.id+')" title="Navigate to courthouse">🧭</button></div>';}).join('');
+    return '<div class="dispatch-day"><div class="dispatch-head"><div><div style="font-size:13px;font-weight:750;color:var(--text)">'+label+'</div><div style="font-size:10px;color:var(--muted)">'+list.length+' hearing'+(list.length===1?'':'s')+' · '+courts.length+' stop'+(courts.length===1?'':'s')+'</div></div><button class="btn sm" onclick="dashOpenRoute(\''+date+'\')">🗺 Open Day Route</button></div><div class="dispatch-stops">'+stops+'</div></div>';
+  }).join('');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1978,13 +2059,7 @@ function renderDash() {
       })() : null;
       var dd = d(h.id);
       var shortLoc = (h.location||'').replace(/ COUNTY/,'').split(' - ').reverse().join(' – ');
-      var defName = (function(){
-        var s = h.style||'';
-        var vs = s.indexOf(' v. '); var vl = 4;
-        if(vs<0) { vs = s.indexOf(' vs. '); vl = 5; }
-        if(vs<0) { vs = s.indexOf(' V. ');  vl = 4; }
-        return vs>=0 ? s.substring(vs+vl).trim() : s;
-      })();
+      var defName = representedParty(h);
       var statusColor = h.result==='Completed'?'var(--green)':h.result==='Accepted'?'var(--blue)':'var(--muted)';
       return '<div style="padding:8px 0;border-bottom:.5px solid var(--bd);display:flex;gap:10px;align-items:flex-start">'
         + '<div style="flex-shrink:0;text-align:right;min-width:52px">'
@@ -1994,6 +2069,7 @@ function renderDash() {
         + '<div style="flex:1;min-width:0">'
           + '<div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+defName+'</div>'
           + '<div style="font-size:11px;color:var(--muted)">'+shortLoc+' · '+h.setting+'</div>'
+          + '<div style="margin-top:3px">'+providerChip(h)+'</div>'
           + '<div style="font-size:10px;color:var(--muted);margin-top:2px">'
             +(dm?'🚗 '+formatTime(DRIVE_MIN_HOME[h.location]||dm)+' from Remlap · ':'')
             +(dd.bundleSize>1?'<span style="color:var(--blue)">bundle '+dd.bundleSize+'x</span> · ':'')
@@ -2002,7 +2078,8 @@ function renderDash() {
         + '</div>'
         + '<div style="flex-shrink:0">'
           + '<div style="font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid '+statusColor+';color:'+statusColor+'">'+h.result+'</div>'
-          + '<button onclick="openModal('+h.id+')" class="btn ghost sm" style="margin-top:4px;font-size:10px;padding:2px 6px;display:block;width:100%">View</button>'
+          + '<button onclick="dashOpenHearing('+h.id+')" class="btn sm route-action" style="margin-top:4px;display:block;width:100%" title="Open courthouse in Google Maps">🧭 Map</button>'
+          + '<button onclick="openModal('+h.id+')" class="btn ghost sm" style="margin-top:4px;font-size:10px;padding:3px 6px;display:block;width:100%">View</button>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -2016,6 +2093,7 @@ function renderDash() {
 
   if ($('dash-today-list'))    $('dash-today-list').innerHTML    = fmtDayHearings(todayHearings,    'No hearings scheduled today');
   if ($('dash-tomorrow-list')) $('dash-tomorrow-list').innerHTML = fmtDayHearings(tomorrowHearings, 'No hearings scheduled tomorrow');
+  renderDispatchBoard();
 
   // Hide panels if neither has hearings (to save space)
   var dayPanels = $('dash-day-panels');
@@ -2390,7 +2468,7 @@ function addHearing() {
   const dt=$('a-dt').value, style=$('a-style').value.trim();
   if(!dt||!style){$('a-msg').innerHTML='<span style="color:var(--red)">Date and Case Style are required.</span>';return;}
   const [date,time]=dt.split('T');
-  H.push({id:nextId++,date,time:time||'09:00',hearing_num:$('a-num').value,style,
+  H.push({id:nextId++,provider:$('a-provider').value,date,time:time||'09:00',hearing_num:$('a-num').value,style,
     setting:$('a-setting').value,location:$('a-loc').value,client_ref:$('a-ref').value,
     result:$('a-result').value,fee:parseFloat($('a-fee').value)||null,non_fee:parseFloat($('a-nf').value)||null});
   H.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2436,9 +2514,9 @@ function openModal(id) {
   $('m-body').innerHTML=`
     <div class="drow"><div class="dkey">Date / Time</div><div class="dval">${h.date} at ${h.time}</div></div>
     <div class="drow"><div class="dkey">Case Style</div><div class="dval">${h.style}</div></div>
-    <div class="drow"><div class="dkey">Creditor (Plaintiff)</div><div class="dval" style="color:var(--text2)">${extractCreditor(h.style)}</div></div>
-    <div class="drow"><div class="dkey">Defendant (Your Client)</div><div class="dval" style="color:var(--accent)">${extractDefendant(h.style)}</div></div>
-    <div class="drow"><div class="dkey">Contracted By</div><div class="dval" style="color:var(--muted)">Nationwide Appearance Attorneys</div></div>
+    <div class="drow"><div class="dkey">Assignment Company</div><div class="dval">${providerName(h)} &nbsp; ${providerChip(h)}</div></div>
+    <div class="drow"><div class="dkey">You Represent</div><div class="dval" style="color:var(--accent)">${representedSide(h)} — ${representedParty(h)}</div></div>
+    <div class="drow"><div class="dkey">Opposing Party</div><div class="dval" style="color:var(--text2)">${opposingParty(h)}</div></div>
     <div class="drow"><div class="dkey">Hearing Type</div><div class="dval">${h.setting}</div></div>
     <div class="drow"><div class="dkey">County Court</div><div class="dval">${h.location||'—'}</div></div>
     <div class="drow"><div class="dkey">Client Ref #</div><div class="dval">${h.client_ref||'—'}</div></div>
@@ -2562,7 +2640,7 @@ function exportCSV(type){
       return {...h,miles_oneway:m,miles_rt:m*2,mileage_cost:+(m*2*MR).toFixed(2),
         rec_min:r,fair_rate:fair,gap:(h.fee||0)-r,verdict:vrd,bundle_size:bundleSize,bundle_pos:bundlePos};
     });
-    downloadCSV('hearings_all.csv',toCSV(rows,['date','time','hearing_num','style','setting','location','client_ref','result','fee','non_fee','miles_oneway','miles_rt','mileage_cost','rec_min','fair_rate','gap','verdict','bundle_size','bundle_pos']));
+    downloadCSV('hearings_all.csv',toCSV(rows,['provider','date','time','hearing_num','style','setting','location','client_ref','result','fee','non_fee','miles_oneway','miles_rt','mileage_cost','rec_min','fair_rate','gap','verdict','bundle_size','bundle_pos']));
   } else if(type==='mileage'){
     const rows=H.filter(h=>h.location&&DIST[h.location]>0).map(h=>{
       const m=DIST[h.location],firm=extractFirm(h.style);
@@ -2846,7 +2924,7 @@ function exportICS(mode) {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-CALNAME:Court Hearings',
-    'X-WR-CALDESC:Hearing appearances - Nationwide Appearance Attorneys',
+    'X-WR-CALDESC:Court appearance assignments - AOD, ThisAppearance, and Nationwide',
   ];
 
   hearingsToExport.forEach(h => {
@@ -2864,9 +2942,10 @@ function exportICS(mode) {
     const description = [
       `Hearing #${h.hearing_num}`,
       `Type: ${h.setting}`,
-      `Creditor: ${creditor}`,
-      `Defendant (your client): ${defendant}`,
-      `Contracted by: Nationwide Appearance Attorneys`,
+      `Plaintiff / Creditor: ${creditor}`,
+      `Defendant / Debtor: ${defendant}`,
+      `You represent: ${representedSide(h)} — ${representedParty(h)}`,
+      `Assignment company: ${providerName(h)}`,
       `Standard rate: $${stdRate}`,
       `RT mileage: ${m*2} mi ($${(m*2*MR).toFixed(2)})`,
       `Status: ${h.result}`,
@@ -3316,15 +3395,15 @@ function renderDriveMode(){
     if(day===driveISO(now)){diff=hm-(now.getHours()*60+now.getMinutes());$('drive-countdown').textContent=diff>=0?(diff<60?diff+' min':'in '+Math.floor(diff/60)+'h '+diff%60+'m'):'time passed';}
     else $('drive-countdown').textContent=day;
   }
-  $('drive-route-list').innerHTML=list.map(function(x,i){return '<div class="drive-route-item '+(i===idx?'next':'')+'"><div class="t">'+formatClock(x.time||'')+'</div><div><div class="c">'+esc(x.location)+'</div><div class="s">'+esc(x.setting||'Hearing')+' · #'+esc(String(x.hearing_num||'—'))+'</div></div><button onclick="driveNavigateOne('+x.id+')" aria-label="Navigate">🧭</button></div>';}).join('')||'<div style="color:var(--muted);padding:8px">No hearings on this date.</div>';
+  $('drive-route-list').innerHTML=list.map(function(x,i){return '<div class="drive-route-item '+(i===idx?'next':'')+'"><div class="t">'+formatClock(x.time||'')+'</div><div><div class="c">'+esc(x.location)+'</div><div class="s">'+esc(x.setting||'Hearing')+' · '+esc(providerKey(x))+' · '+esc(representedSide(x))+' · #'+esc(String(x.hearing_num||'—'))+'</div></div><button onclick="driveNavigateOne('+x.id+')" aria-label="Navigate">🧭</button></div>';}).join('')||'<div style="color:var(--muted);padding:8px">No hearings on this date.</div>';
   var unique={}; list.forEach(function(x){unique[x.location]=1;}); $('drive-route-summary').textContent=list.length+' hearing'+(list.length===1?'':'s')+' · '+Object.keys(unique).length+' courthouse'+(Object.keys(unique).length===1?'':'s');
 }
-function driveCourtQuery(loc){var row=AL_COUNTIES.find(function(r){return r[4]===loc||r[0]===loc;});return row?(row[1]+' courthouse, '+row[0]+' County, Alabama'):loc+', Alabama courthouse';}
+function driveCourtQuery(loc){var aliases={'TALLEDAGE COUNTY - SYLACAUGA':'TALLADEGA COUNTY - SYLACAUGA','DEKLAB COUNTY - FT PAYNE':'DEKALB COUNTY - FORT PAYNE','CHAMBERS COUNTY - LAYFATTE':'CHAMBERS COUNTY - LAFAYETTE'};var clean=aliases[loc]||loc;var row=AL_COUNTIES.find(function(r){return r[4]===clean||r[0]===clean;});return row?(row[1]+' courthouse, '+row[0]+' County, Alabama'):clean+', Alabama courthouse';}
 function driveMapsURL(destination, origin){return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent(origin||'Current Location')+'&destination='+encodeURIComponent(destination);}
 function driveNavigate(){if(!driveSelected){alert('No hearing selected.');return;}window.open(driveMapsURL(driveCourtQuery(driveSelected.location),'Current Location'),'_blank');}
 function driveNavigateOne(id){var h=H.find(function(x){return x.id===id;});if(h)window.open(driveMapsURL(driveCourtQuery(h.location),'Current Location'),'_blank');}
 function driveNavigateAll(){var list=driveHearings();if(!list.length){alert('No hearings on this date.');return;}var seen={},stops=[];list.forEach(function(h){if(!seen[h.location]){seen[h.location]=1;stops.push(driveCourtQuery(h.location));}});var dest=stops.pop();var url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent('Current Location')+'&destination='+encodeURIComponent(dest);if(stops.length)url+='&waypoints='+encodeURIComponent(stops.join('|'));window.open(url,'_blank');}
-function driveReadAloud(){if(!driveSelected)return;var h=driveSelected;var text='Your next court appearance is '+formatClock(h.time||'')+' at '+h.location+'. '+(h.setting||'Hearing')+'. Case '+(h.style||'')+'. Hearing number '+(h.hearing_num||'not entered')+'.';if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text));}else alert(text);}
+function driveReadAloud(){if(!driveSelected)return;var h=driveSelected;var text='Your next court appearance is '+formatClock(h.time||'')+' at '+h.location+'. '+(h.setting||'Hearing')+'. You represent the '+representedSide(h)+'. Assignment by '+providerName(h)+'. Case '+(h.style||'')+'. Hearing number '+(h.hearing_num||'not entered')+'.';if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text));}else alert(text);}
 function driveVoice(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition, status=$('drive-voice-status');
   if(!SR){status.textContent='Voice recognition is not supported in this browser. Try Chrome on Android.';return;}

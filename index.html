@@ -448,6 +448,55 @@ td,.ilbl,.dval{color:var(--text2)}
 .completed-month-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:11px 14px;background:#eaf3fb;border:1px solid #c5daed;border-radius:12px;color:#274b6d}
 .completed-month-summary strong{color:#173d61}.completed-month-summary .month-total{font-family:'IBM Plex Mono',monospace;color:var(--green);font-weight:700}
 @media(max-width:900px){.fbar{background:rgba(248,251,254,.97)}.hdr-badges{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Theme switcher: Day, Light, Night and Dark */
+.theme-picker{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:5px}
+.theme-picker label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.theme-picker select{min-height:28px;padding:3px 26px 3px 8px;border-radius:999px;font-size:11px;font-weight:650;background:var(--s2);color:var(--text);border:1px solid var(--bd);cursor:pointer}
+
+html[data-theme="day"]{
+  --bg:#fbf7ee;--s1:#fffdf8;--s2:#f5eddf;--bd:#e5d5bd;
+  --accent:#a85d22;--green:#39734f;--blue:#316b8f;--red:#b64b4b;
+  --muted:#776b5b;--text:#2f2a23;--text2:#554c40;--shadow:0 10px 28px rgba(88,68,39,.09)
+}
+html[data-theme="day"] body{background:linear-gradient(180deg,#fffdf8 0,#fbf6eb 46rem,#f5eddf 100%)}
+html[data-theme="day"] .hdr,html[data-theme="day"] .tabs{background:rgba(255,253,248,.95)}
+html[data-theme="day"] .hdr-title{color:#5b3a22}html[data-theme="day"] .fbar{background:rgba(255,251,244,.95)}
+html[data-theme="day"] thead th,html[data-theme="day"] .rc-table thead th{background:#f4eadb}
+html[data-theme="day"] tbody tr:nth-child(even){background:#fffaf2}html[data-theme="day"] tbody tr:hover{background:#f6eddf}
+
+html[data-theme="night"]{
+  --bg:#0d1b2a;--s1:#14263a;--s2:#1b3047;--bd:#35506a;
+  --accent:#f2b85b;--green:#6ed39a;--blue:#79b8f3;--red:#ff858c;
+  --muted:#9eb0c2;--text:#f3f7fb;--text2:#d7e1ea;--shadow:0 14px 36px rgba(0,0,0,.25)
+}
+html[data-theme="night"] body{background:radial-gradient(circle at 12% -10%,rgba(74,140,201,.16),transparent 34rem),#0d1b2a}
+html[data-theme="night"] .hdr,html[data-theme="night"] .tabs{background:rgba(17,35,53,.95)}
+html[data-theme="night"] .hdr-title{color:#f2b85b}html[data-theme="night"] .hbadge,html[data-theme="night"] .fbar{background:#13263a}
+html[data-theme="night"] input,html[data-theme="night"] select,html[data-theme="night"] textarea,html[data-theme="night"] .rate-input{background:#102236;color:var(--text)}
+html[data-theme="night"] thead th,html[data-theme="night"] .rc-table thead th,html[data-theme="night"] .pag,html[data-theme="night"] .bcard-hdr,html[data-theme="night"] .dispatch-head{background:#1a3047}
+html[data-theme="night"] tbody tr:nth-child(even){background:rgba(255,255,255,.018)}html[data-theme="night"] tbody tr:hover{background:rgba(121,184,243,.08)}
+html[data-theme="night"] .btn.ghost,html[data-theme="night"] .drive-btn{background:#182d43;color:var(--text)}
+html[data-theme="night"] .drive-card{background:linear-gradient(145deg,#162a40,#1b344d)}html[data-theme="night"] .drive-meta-grid>div,html[data-theme="night"] .drive-route-item{background:#102236}
+html[data-theme="night"] .modal,html[data-theme="night"] .cal-day{background:#14263a}html[data-theme="night"] .completed-month-summary{background:#17314a;border-color:#355b7a;color:#d7e7f4}
+html[data-theme="night"] .completed-month-summary strong{color:#fff}
+
+html[data-theme="dark"]{
+  --bg:#111315;--s1:#1b1e21;--s2:#24282c;--bd:#3b4147;
+  --accent:#e6b15c;--green:#69c58a;--blue:#78aee8;--red:#ef7b82;
+  --muted:#a2a9b0;--text:#f1f3f5;--text2:#d3d7db;--shadow:0 14px 36px rgba(0,0,0,.28)
+}
+html[data-theme="dark"] body{background:linear-gradient(180deg,#15181b,#101214)}
+html[data-theme="dark"] .hdr,html[data-theme="dark"] .tabs{background:rgba(27,30,33,.96)}
+html[data-theme="dark"] .hdr-title{color:#e8c17e}html[data-theme="dark"] .hbadge,html[data-theme="dark"] .fbar{background:#202428}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea,html[data-theme="dark"] .rate-input{background:#171a1d;color:var(--text)}
+html[data-theme="dark"] thead th,html[data-theme="dark"] .rc-table thead th,html[data-theme="dark"] .pag,html[data-theme="dark"] .bcard-hdr,html[data-theme="dark"] .dispatch-head{background:#252a2f}
+html[data-theme="dark"] tbody tr:nth-child(even){background:rgba(255,255,255,.015)}html[data-theme="dark"] tbody tr:hover{background:rgba(120,174,232,.07)}
+html[data-theme="dark"] .btn.ghost,html[data-theme="dark"] .drive-btn{background:#24282c;color:var(--text)}
+html[data-theme="dark"] .drive-card{background:linear-gradient(145deg,#202428,#282d32)}html[data-theme="dark"] .drive-meta-grid>div,html[data-theme="dark"] .drive-route-item{background:#181b1e}
+html[data-theme="dark"] .modal,html[data-theme="dark"] .cal-day{background:#1b1e21}html[data-theme="dark"] .completed-month-summary{background:#202c35;border-color:#3d5568;color:#d7e1e9}
+html[data-theme="dark"] .completed-month-summary strong{color:#fff}
+@media(max-width:640px){.theme-picker label{display:none}.theme-picker select{max-width:108px}.theme-picker{margin-top:3px}}
 </style>
 
 </head>
@@ -463,6 +512,12 @@ td,.ilbl,.dval{color:var(--text2)}
   <div id="hdr-clock" style="text-align:right;flex-shrink:0;line-height:1.4">
     <div id="clock-time" style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;color:var(--accent)">—</div>
     <div id="clock-date" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.04em">—</div>
+    <div class="theme-picker">
+      <label for="theme-select">Color</label>
+      <select id="theme-select" aria-label="Choose app color scheme" onchange="applyTheme(this.value,true)">
+        <option value="day">☀ Day</option><option value="light">◌ Light</option><option value="night">☾ Night</option><option value="dark">● Dark</option>
+      </select>
+    </div>
   </div>
   <div class="hdr-badges">
     <div class="hbadge">Hearings: <b id="hb1">—</b></div>
@@ -1863,12 +1918,28 @@ function renderPagBtns(container_id, pages, currentPg, onClick) {
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════════
 function init() {
+  initTheme();
   loadHearings();
   initModernNav();
   rebuildCache();
   initRates();
   populateSelects();
   renderAll();
+}
+
+function applyTheme(theme,remember) {
+  const allowed=['day','light','night','dark'];
+  const selected=allowed.includes(theme)?theme:'light';
+  document.documentElement.dataset.theme=selected;
+  const picker=$('theme-select');if(picker)picker.value=selected;
+  const themeColors={day:'#fbf7ee',light:'#f4f7fb',night:'#0d1b2a',dark:'#111315'};
+  const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',themeColors[selected]);
+  if(remember){try{localStorage.setItem('courtTracker.theme',selected);}catch(e){console.warn('Could not save theme',e);}}
+}
+function initTheme(){
+  let saved='';try{saved=localStorage.getItem('courtTracker.theme')||'';}catch(e){}
+  if(!saved)saved=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'light';
+  applyTheme(saved,false);
 }
 
 function populateSelects() {
